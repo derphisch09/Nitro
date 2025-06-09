@@ -957,7 +957,7 @@
     <ClCompile Include="src\Hooks\bf_read_ReadString.cpp" />
     <ClCompile Include="src\Hooks\CAchievementMgr_CheckAchievementsEnabled.cpp" />
     <ClCompile Include="src\Hooks\CAttributeManager_AttribHookValue.cpp" />
-    <ClCompile Include="src\Hooks\CBaseAnimating_EnableAbsRecomputations.cpp" />
+    <ClCompile Include="src\Hooks\CBaseAnimating_FrameAdvance.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_Interpolate.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_MaintainSequenceTransitions.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetSequence.cpp" />
@@ -1284,6 +1284,8 @@
     <ClInclude Include="src\SDK\Definitions\Main\IAchievementMgr.h" />
     <ClInclude Include="src\SDK\Definitions\Main\MD5.h" />
     <ClInclude Include="src\SDK\Definitions\Main\PlayerStats.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\UtlBlockMemory.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\UtlMemory.h" />
     <ClInclude Include="src\SDK\Definitions\Misc\bitvec.h" />
     <ClInclude Include="src\SDK\Definitions\Misc\BSPFlags.h" />
     <ClInclude Include="src\SDK\Definitions\Interfaces\IMoveHelper.h" />
