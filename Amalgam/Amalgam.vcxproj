@@ -161,7 +161,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -269,7 +269,7 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)include\;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\;E:\boost\;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)$(Configuration)</TargetName>
     <OutDir>$(SolutionDir)output\$(Platform)\$(Configuration)\</OutDir>
@@ -772,10 +772,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;__CONFIGURATION__="Release";__PLATFORM__="x64";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;__CONFIGURATION__="Release";__PLATFORM__="x64";DEBUG_HOOKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>
       </OmitFramePointers>
@@ -791,7 +791,7 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -957,6 +957,7 @@
     <ClCompile Include="src\Hooks\bf_read_ReadString.cpp" />
     <ClCompile Include="src\Hooks\CAchievementMgr_CheckAchievementsEnabled.cpp" />
     <ClCompile Include="src\Hooks\CAttributeManager_AttribHookValue.cpp" />
+    <ClCompile Include="src\Hooks\CBaseAnimating_EnableAbsRecomputations.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_Interpolate.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_MaintainSequenceTransitions.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetSequence.cpp" />
