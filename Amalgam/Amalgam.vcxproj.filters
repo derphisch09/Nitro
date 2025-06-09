@@ -203,7 +203,7 @@
     <ClCompile Include="src\SDK\Definitions\Main\CBasePlayer.cpp" />
     <ClCompile Include="src\SDK\Definitions\Main\CBaseProjectile.cpp" />
     <ClCompile Include="src\Hooks\CTFRocketLauncher_CheckReloadMisfire.cpp" />
-    <ClCompile Include="src\Hooks\CBaseAnimating_EnableAbsRecomputations.cpp" />
+    <ClCompile Include="src\Hooks\CBaseAnimating_FrameAdvance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Utils\UtlVector\UtlVector.h" />
@@ -586,6 +586,8 @@
     <ClInclude Include="src\SDK\Definitions\Main\PlayerStats.h" />
     <ClInclude Include="src\Features\Visuals\Groups\Groups.h" />
     <ClInclude Include="src\SDK\Definitions\Interfaces\IKeyValuesSystem.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\UtlBlockMemory.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\UtlMemory.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
