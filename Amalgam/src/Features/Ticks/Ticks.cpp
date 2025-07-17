@@ -32,11 +32,12 @@ void CTicks::Recharge(CTFPlayer* pLocal)
 		m_iDeficit--, m_iShiftedTicks--;
 	}
 
-	if (!Vars::Doubletap::RechargeTicks.Value && !bPassive
+	if (!Vars::Doubletap::RechargeTicks.Value && !bPassive && !m_bRechargeQueue
 		|| m_bDoubletap || m_bWarp || m_iShiftedTicks == m_iMaxShift || m_bSpeedhack)
 		return;
 
 	m_bRecharge = true;
+	m_bRechargeQueue = false;
 	m_iShiftedGoal = m_iShiftedTicks + 1;
 }
 
@@ -273,23 +274,26 @@ void CTicks::CLMove(float accumulated_extra_samples, bool bFinalTick)
 		m_bShifting = m_bShifted = m_iShiftedTicks - 1 != m_iShiftedGoal;
 		m_iShiftStart = m_iShiftedTicks;
 
-#ifndef TICKBASE_DEBUG
+#ifndef DEBUG_TICKBASE
 		while (m_iShiftedTicks > m_iShiftedGoal)
 			CLMoveFunc(accumulated_extra_samples, m_iShiftedTicks - 1 == m_iShiftedGoal);
 			//CLMoveFunc(accumulated_extra_samples, bFinalTick);
 #else
 		if (Vars::Debug::Info.Value)
-			SDK::Output("Pre loop", "", { 0, 255, 255, 255 });
+			SDK::Output("PreLoop", "", { 0, 255, 255, 255 });
 		while (m_iShiftedTicks > m_iShiftedGoal)
 		{
 			if (Vars::Debug::Info.Value)
-				SDK::Output("Pre move", "", { 0, 127, 255, 255 });
+				SDK::Output("PreMove", "", { 0, 127, 255, 255 });
+
 			CLMoveFunc(accumulated_extra_samples, m_iShiftedTicks - 1 == m_iShiftedGoal);
+
 			if (Vars::Debug::Info.Value)
-				SDK::Output("Post move", "\n", { 0, 127, 255, 255 });
+				SDK::Output("PostMove", "\n", { 0, 127, 255, 255 });
 		}
+
 		if (Vars::Debug::Info.Value)
-			SDK::Output("Post loop", "\n", { 0, 0, 255, 255 });
+			SDK::Output("PostLoop", "\n", { 0, 0, 255, 255 });
 #endif
 
 		m_bShifting = m_bAntiWarp = false;
