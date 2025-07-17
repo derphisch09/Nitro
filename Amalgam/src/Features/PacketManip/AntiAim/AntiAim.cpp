@@ -42,8 +42,6 @@ bool CAntiAim::ShouldRun(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 	return true;
 }
 
-
-
 void CAntiAim::FakeShotAngles(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 {
 	if (!Vars::AntiAim::InvalidShootPitch.Value || G::Attacking != 1 || G::PrimaryWeaponType != EWeaponType::HITSCAN || !pLocal || pLocal->m_MoveType() != MOVETYPE_WALK)
@@ -57,6 +55,7 @@ void CAntiAim::FakeShotAngles(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCm
 	}
 
 	G::SilentAngles = true;
+<<<<<<< Updated upstream
 	if (!Vars::Aimbot::General::NoSpread.Value)
 	{	// messes with nospread accuracy
 		pCmd->viewangles.x = 180 - pCmd->viewangles.x;
@@ -64,12 +63,26 @@ void CAntiAim::FakeShotAngles(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCm
 	}
 	else
 		pCmd->viewangles.x += 360 * (vFakeAngles.x < 0 ? -1 : 1);
+=======
+
+	//pCmd->viewangles.x = CalculateCustomRealPitch(-pCmd->viewangles.x, false) + 180;
+	pCmd->viewangles.x += 360 * (vFakeAngles.x < 0 ? -1 : 1);
+	pCmd->viewangles.y += 180;
+>>>>>>> Stashed changes
 }
 
 static inline float EdgeDistance(CTFPlayer* pEntity, float flYaw, float flOffset)
 {
+<<<<<<< Updated upstream
 	Vec3 vForward, vRight; Math::AngleVectors({ 0, flYaw, 0 }, &vForward, &vRight, nullptr);
 	Vec3 vCenter = pEntity->GetCenter();
+=======
+	Vec3 vForward, vRight;
+	Math::AngleVectors({ 0, flEdgeRayYaw, 0 }, &vForward, &vRight, nullptr);
+
+	Vec3 vCenter = pEntity->GetCenter() + vRight * flOffset;
+	Vec3 vEndPos = vCenter + vForward * 300.f;
+>>>>>>> Stashed changes
 
 	CGameTrace trace = {};
 	CTraceFilterWorldAndPropsOnly filter = {};
@@ -217,7 +230,21 @@ void CAntiAim::MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd)
 	}
 }
 
+void CAntiAim::LegJitter(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	if (!Vars::AntiAim::LegJitter.Value || !F::AntiAim.YawOn() || !pLocal->m_hGroundEntity() || pLocal->InCond(TF_COND_HALLOWEEN_KART))
+		return;
 
+	if (pCmd->forwardmove == 0.f && pCmd->sidemove == 0.f && pLocal->m_vecVelocity().Length2D() < 10.f)
+	{
+		static bool pos = true;
+		const float scale = pLocal->IsDucking() ? 14.f : 1.f;
+
+		pos ? pCmd->forwardmove = scale : pCmd->forwardmove = -scale;
+		pos ? pCmd->sidemove = scale : pCmd->sidemove = -scale;
+		pos = !pos;
+	}
+}
 
 void CAntiAim::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd, bool bSendPacket)
 {
@@ -247,4 +274,5 @@ void CAntiAim::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd, bo
 	pCmd->viewangles.y = vAngles.y;
 
 	MinWalk(pLocal, pCmd);
+	LegJitter(pLocal, pCmd);
 }
