@@ -16,9 +16,16 @@ std::vector<Target_t> CAimbotHitscan::GetTargets(CTFPlayer* pLocal, CTFWeaponBas
 
 	{
 		auto eGroupType = EGroupType::GROUP_INVALID;
+
 		if (Vars::Aimbot::General::Target.Value & Vars::Aimbot::General::TargetEnum::Players)
 			eGroupType = EGroupType::PLAYERS_ENEMIES;
-		if (SDK::AttribHookValue(0, "jarate_duration", pWeapon) > 0 && Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::ExtinguishTeam)
+
+		bool bCanExtinguish = SDK::AttribHookValue(0, "jarate_duration", pWeapon) > 0;
+
+		if (bCanExtinguish && Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::ExtinguishTeam)
+
+		//if (SDK::AttribHookValue(0, "jarate_duration", pWeapon) > 0 && Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::ExtinguishTeam)
+		if (bCanExtinguish && Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::ExtinguishTeam)
 			eGroupType = EGroupType::PLAYERS_ALL;
 		if (pWeapon->GetWeaponID() == TF_WEAPON_MEDIGUN)
 			eGroupType = Vars::Aimbot::Healing::AutoHeal.Value ? EGroupType::PLAYERS_TEAMMATES : EGroupType::GROUP_INVALID;
@@ -31,7 +38,7 @@ std::vector<Target_t> CAimbotHitscan::GetTargets(CTFPlayer* pLocal, CTFWeaponBas
 
 			if (bTeammate)
 			{
-				if (SDK::AttribHookValue(0, "jarate_duration", pWeapon) > 0)
+				if (bCanExtinguish)
 				{
 					if (!pEntity->As<CTFPlayer>()->InCond(TF_COND_BURNING))
 						continue;
@@ -65,7 +72,9 @@ std::vector<Target_t> CAimbotHitscan::GetTargets(CTFPlayer* pLocal, CTFWeaponBas
 
 			Vec3 vPos = pEntity->GetCenter();
 			Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vPos);
+
 			float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+
 			if (flFOVTo > Vars::Aimbot::General::AimFOV.Value)
 				continue;
 
@@ -138,10 +147,9 @@ std::vector<Target_t> CAimbotHitscan::SortTargets(CTFPlayer* pLocal, CTFWeaponBa
 	F::AimbotGlobal.SortTargets(vTargets, Vars::Aimbot::General::TargetSelection.Value);
 	vTargets.resize(std::min(size_t(Vars::Aimbot::General::MaxTargets.Value), vTargets.size()));
 	F::AimbotGlobal.SortPriority(vTargets);
+
 	return vTargets;
 }
-
-
 
 int CAimbotHitscan::GetHitboxPriority(int nHitbox, CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CBaseEntity* pTarget)
 {
@@ -571,30 +579,64 @@ int CAimbotHitscan::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBase* 
 	return iReturn;
 }
 
-
-
-/* Returns whether AutoShoot should fire */
 bool CAimbotHitscan::ShouldFire(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd, const Target_t& tTarget)
 {
-	if (!Vars::Aimbot::General::AutoShoot.Value) return false;
+	if (!Vars::Aimbot::General::AutoShoot.Value)
+		return false;
 
 	if (Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::WaitForHeadshot)
 	{
+		/*CUserCmd dummy = *pCmd;//
+		dummy.buttons |= IN_ATTACK;//
+
+		float originalCurTime = I::GlobalVars->curtime;
+
+		if (F::Ticks.CanDoubleTap(&dummy, false))
+		{
+			int ticks_to_shift = F::Ticks.getShiftLimit();
+			int server_tick = tf_utils::timeToTicks(tf_utils::getServerTime() + tf_utils::getLatency()) - 1;
+			float adjusted_time = tf_utils::ticksToTime(F::Ticks.getAdjustedTick(ticks_to_shift + 1, local->m_nTickBase(), server_tick));
+			I::GlobalVars->curtime = adjusted_time;
+		}*/
+
 		switch (pWeapon->GetWeaponID())
 		{
 		case TF_WEAPON_SNIPERRIFLE:
 		case TF_WEAPON_SNIPERRIFLE_DECAP:
+		{
 			if (!G::CanHeadshot && pLocal->InCond(TF_COND_AIMING) && pWeapon->As<CTFSniperRifle>()->GetRifleType() != RIFLE_JARATE)
 				return false;
+
+			/*if (SDK::AttribHookValue(0.0f, "sniper_no_headshot_without_full_charge", pWeapon) != 0)
+			{
+				if (!pWeapon->As<CTFSniperRifle>()->IsFullyCharged())
+				{
+					pCmd->buttons |= IN_ATTACK;
+					return false;
+				}
+			}
+
+			if (SDK::AttribHookValue(0.0f, "sniper_crit_no_scope", pWeapon) == 0)
+			{
+				if ((I::GlobalVars->curtime - pLocal->m_flFOVTime()) < TF_WEAPON_SNIPERRIFLE_NO_CRIT_AFTER_ZOOM_TIME)
+				{
+					pCmd->buttons |= IN_ATTACK;
+					return false;
+				}
+			}*/
+
 			break;
+		}
 		case TF_WEAPON_SNIPERRIFLE_CLASSIC:
 			if (!G::CanHeadshot)
 				return false;
 			break;
 		case TF_WEAPON_REVOLVER:
-			if (SDK::AttribHookValue(0, "set_weapon_mode", pWeapon) == 1 && !pWeapon->AmbassadorCanHeadshot())
+			if (SDK::AttribHookValue(0, "set_weapon_mode", pWeapon) == 1 && !pWeapon->AmbassadorCanHeadshot() && pWeapon->As<CTFRevolver>()->GetWeaponSpread() > 0.0f)
 				return false;
 		}
+
+		//I::GlobalVars->curtime = originalCurTime;
 	}
 
 	if (Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::WaitForCharge)
@@ -632,6 +674,25 @@ bool CAimbotHitscan::ShouldFire(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUser
 	return true;
 }
 
+void SmoothAim(CUserCmd* cmd, Vec3& target_angle, float smooth_factor)
+{
+	if (!cmd)
+		return;
+
+	if (smooth_factor >= 100.0f)
+		return;
+
+	Vec3 delta_ang = target_angle - cmd->viewangles;
+	Math::ClampAngles(delta_ang);
+	float smooth = Math::RemapVal(smooth_factor, 1.0f, 100.0f, 1.5f, 30.0f);
+
+	if (delta_ang.Length() > 0.0f && smooth)
+	{
+		cmd->viewangles += delta_ang / smooth;
+		I::EngineClient->SetViewAngles(cmd->viewangles);
+	}
+}
+
 bool CAimbotHitscan::Aim(Vec3 vCurAngle, Vec3 vToAngle, Vec3& vOut, int iMethod)
 {
 	auto pLocal = H::Entities.GetLocal();
@@ -643,8 +704,16 @@ bool CAimbotHitscan::Aim(Vec3 vCurAngle, Vec3 vToAngle, Vec3& vOut, int iMethod)
 		return true;
 	}
 
+<<<<<<< Updated upstream
 	bool bReturn = false;
 	vToAngle -= vPunch;
+=======
+	if (auto pLocal = H::Entities.GetLocal())
+		vToAngle -= pLocal->m_vecPunchAngle();
+
+	Math::ClampAngles(vToAngle);
+
+>>>>>>> Stashed changes
 	switch (iMethod)
 	{
 	case Vars::Aimbot::General::AimTypeEnum::Plain:
@@ -681,6 +750,8 @@ void CAimbotHitscan::Aim(CUserCmd* pCmd, Vec3& vAngle, int iMethod)
 			break;
 		[[fallthrough]];
 	case Vars::Aimbot::General::AimTypeEnum::Smooth:
+		SmoothAim(pCmd, vAngle, Vars::Aimbot::General::AssistStrength.Value);//
+		break;
 	case Vars::Aimbot::General::AimTypeEnum::Assistive:
 		pCmd->viewangles = vAngle;
 		I::EngineClient->SetViewAngles(vAngle);
