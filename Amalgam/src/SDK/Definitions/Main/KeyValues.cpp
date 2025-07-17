@@ -4,11 +4,14 @@
 
 #define Q_ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
 
+//MAKE_SIGNATURE(KeyValues_KeyValues, "client.dll", "40 53 48 83 EC ? 48 8B D9 C7 01", 0x0);
 MAKE_SIGNATURE(KeyValues_LoadFromBuffer, "engine.dll", "4C 89 4C 24 ? 48 89 4C 24 ? 55 56", 0x0);
 MAKE_SIGNATURE(KeyValues_Initialize, "engine.dll", "40 53 48 83 EC ? 48 8B D9 C7 01", 0x0);
 MAKE_SIGNATURE(KeyValues_GetSymbolForStringClassic, "engine.dll", "48 89 5C 24 ? 57 48 83 EC ? 0F B6 DA 48 8B F9", 0x0);
 MAKE_SIGNATURE(KeyValues_GetStringForSymbolClassic, "engine.dll", "40 53 48 83 EC ? 8B D9 FF 15", 0x0);
-MAKE_SIGNATURE(KeyValues_FindKey, "client.dll", "48 8B C4 53 57 41 56", 0x0);
+MAKE_SIGNATURE(KeyValues_FindKey, "client.dll", "48 8B C4 53 57 41 56", 0x0); // E8 ? ? ? ? F3 41 0F 59 F4
+//MAKE_SIGNATURE(KeyValues_SetInt, "client.dll", "E8 ? ? ? ? 41 2B F6", 0x0);
+//MAKE_SIGNATURE(KeyValues_SetString, "client.dll", "E8 ? ? ? ? D1 C7", 0x0);
 
 int UnicodeToUTF8(const wchar_t* unicode, char* ansi, int ansiBufferSize)
 {
