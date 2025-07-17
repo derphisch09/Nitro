@@ -1,4 +1,5 @@
 #pragma once
+
 #include "CBaseCombatWeapon.h"
 
 MAKE_SIGNATURE(CTFWeaponBase_GetSpreadAngles, "client.dll", "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 0F 29 74 24 ? 48 8B DA 48 8B F9 E8 ? ? ? ? 48 8B C8", 0x0);
@@ -9,6 +10,12 @@ MAKE_SIGNATURE(CTFWeaponBase_CalcIsAttackCriticalHelper, "client.dll", "48 89 5C
 MAKE_SIGNATURE(CTFWeaponBase_GetAppropriateWorldOrViewModel, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 C7 44 24 ? ? ? ? ? 4C 8D 0D ? ? ? ? 33 D2 4C 8D 05 ? ? ? ? E8 ? ? ? ? 48 8B F8 48 85 C0 74 ? 48 8B CB", 0x0);
 MAKE_SIGNATURE(CTFWeaponBase_IncrementAmmo, "client.dll", "48 89 5C 24 ? 56 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8", 0x0);
 MAKE_SIGNATURE(CTFWeaponBase_GetMaxClip1, "client.dll", "40 53 48 83 EC ? 48 8B 01 48 8B D9 FF 90 ? ? ? ? 48 8B CB 84 C0 74", 0x0);
+//MAKE_SIGNATURE(CTFWeaponBase_AreRandomCritsEnabled, "client.dll", "48 83 EC 28 48 8B 0D ? ? ? ? 48 85 C9 74 31", 0x0);
+
+MAKE_SIGNATURE(CTFRevolver_GetWeaponSpread, "client.dll", "40 53 48 83 EC 40 0F 29 74 24 ? 48 8B D9 E8 ? ? ? ?", 0x0);
+
+MAKE_SIGNATURE(CTFMinigun_StartMuzzleEffect, "client.dll", "E8 ? ? ? ? EB 13 48 83 BB ? ? ? ? ?", 0x0);
+MAKE_SIGNATURE(CTFMinigun_StartBrassEffect, "client.dll", "E8 ? ? ? ? EB 13 48 83 B9 ? ? ? ? ?", 0x0);
 
 class CTFPlayer;
 class CTFGrenadePipebombProjectile;
@@ -197,8 +204,11 @@ public:
 	NETVAR_OFF(m_nCritSeedRequests, int, "CTFWeaponBase", "m_iReloadMode", -236);
 	NETVAR_OFF(m_iWeaponMode, int, "CTFWeaponBase", "m_iReloadMode", -4);
 	NETVAR_OFF(m_flCritTime, float, "CTFWeaponBase", "m_flLastCritCheckTime", -4);
+	NETVAR_OFF(m_iLastCritCheckFrame, int, "CTFWeaponBase", "m_flLastCritCheckTime", 4);
 	NETVAR_OFF(m_iCurrentSeed, int, "CTFWeaponBase", "m_flLastCritCheckTime", 8);
 	NETVAR_OFF(m_flLastRapidFireCritCheckTime, float, "CTFWeaponBase", "m_flLastCritCheckTime", 12);
+	NETVAR_OFF(m_bCurrentAttackIsCrit, bool, "CTFWeaponBase", "m_iReloadMode", 18);
+
 	inline void* m_pMeter()
 	{
 		static int nOffset = U::NetVars.GetNetVar("CTFWeaponBase", "m_flEffectBarRegenTime") + -40;
@@ -213,7 +223,14 @@ public:
 	VIRTUAL(GetWeaponSpread, float, 470, this);
 	VIRTUAL(GetSwingRange, int, 458, this);
 	VIRTUAL_ARGS(ApplyFireDelay, float, 410, (float flDelay), this, flDelay);
+<<<<<<< Updated upstream
 	
+=======
+	VIRTUAL_ARGS(GetSwingRange, int, 458, (CBaseEntity* pLocal), this, pLocal);
+	VIRTUAL(EnergyGetShotCost, float, 435, this);
+	VIRTUAL(IsBlastImpactWeapon, bool, 434, this);
+
+>>>>>>> Stashed changes
 	SIGNATURE(GetMaxClip1, float, CTFWeaponBase, this);
 	SIGNATURE(IncrementAmmo, void, CTFWeaponBase, this);
 	SIGNATURE(CalcIsAttackCritical, bool, CTFWeaponBase, this);
@@ -221,6 +238,8 @@ public:
 	SIGNATURE(UpdateAllViewmodelAddons, bool, CTFWeaponBase, this);
 	SIGNATURE(GetAppropriateWorldOrViewModel, CBaseAnimating*, CTFWeaponBase, this);
 	SIGNATURE_ARGS(GetSpreadAngles, void, CTFWeaponBase, (Vec3& out), this, std::ref(out));
+	//SIGNATURE(AreRandomCritsEnabled, bool, CTFWeaponBase, this);
+
 	Vec3 GetSpreadAngles()
 	{
 		Vec3 vOut;
@@ -228,6 +247,8 @@ public:
 		return vOut;
 	}
 
+	bool CanOverload();
+	float EnergyGetMaxEnergy();
 	bool HasPrimaryAmmoForShot();
 	bool CanPrimaryAttack();
 	bool CanSecondaryAttack();
@@ -244,10 +265,45 @@ public:
 	CHudTexture* GetWeaponIcon();
 };
 
+class CTFWeaponBaseGun : public CTFWeaponBase
+{
+public:
+	bool HasKnockBack();
+};
+
 class CTFWeaponBaseMelee : public CTFWeaponBase
 {
 public:
+	NETVAR_OFF(m_flSmackTime, float, "CTFWeaponBase", "m_nInspectStage", 28);
+
 	SIGNATURE(CalcIsAttackCriticalHelper, bool, CTFWeaponBaseMelee, this);
+};
+
+class CTFWeaponBuilder : public CTFWeaponBase
+{
+public:
+	NETVAR(m_iBuildState, int, "CTFWeaponBuilder", "m_iBuildState");
+	NETVAR(m_iObjectMode, int, "CTFWeaponBuilder", "m_iObjectMode");
+	NETVAR(m_flWheatleyTalkingUntil, float, "CTFWeaponBuilder", "m_flWheatleyTalkingUntil");
+	NETVAR(m_iObjectType, int, "CTFWeaponBuilder", "m_iObjectType");
+	NETVAR(m_hObjectBeingBuilt, EHANDLE, "CTFWeaponBuilder", "m_hObjectBeingBuilt");
+	NETVAR(m_aBuildableObjectTypes, void*, "CTFWeaponBuilder", "m_aBuildableObjectTypes");
+};
+
+class CTFWeaponSlap : public CTFWeaponBaseMelee
+{
+public:
+	NETVAR(m_bFirstHit, bool, "CTFWeaponSlap", "m_bFirstHit");
+	NETVAR(m_nNumKills, int, "CTFWeaponSlap", "m_nNumKills");
+};
+
+class CTFRocketPack : public CTFWeaponBaseMelee
+{
+public:
+	NETVAR(m_flInitLaunchTime, float, "CTFRocketPack", "m_flInitLaunchTime");
+	NETVAR(m_flLaunchTime, float, "CTFRocketPack", "m_flLaunchTime");
+	NETVAR(m_flToggleEndTime, float, "CTFRocketPack", "m_flToggleEndTime");
+	NETVAR(m_bEnabled, bool, "CTFRocketPack", "m_bEnabled");
 };
 
 class CTFKnife : public CTFWeaponBase
@@ -259,11 +315,34 @@ public:
 	NETVAR(m_flKnifeMeltTimestamp, float, "CTFKnife", "m_flKnifeMeltTimestamp");
 };
 
+class CTFRevolver : public CTFWeaponBaseGun
+{
+public:
+	bool CanHeadshot();
+
+	SIGNATURE(GetWeaponSpread, float, CTFRevolver, this);
+};
+
+class CTFSMG : public CTFWeaponBaseGun
+{
+public:
+
+};
+
+class CTFChargedSMG : public CTFSMG
+{
+public:
+	NETVAR(m_flMinicritCharge, float, "CTFChargedSMG", "m_flMinicritCharge");
+};
+
 class CTFMinigun : public CTFWeaponBase
 {
 public:
 	NETVAR(m_iWeaponState, int, "CTFMinigun", "m_iWeaponState");
 	NETVAR(m_bCritShot, bool, "CTFMinigun", "m_bCritShot");
+
+	SIGNATURE(StartMuzzleEffect, void, CTFMinigun, this);
+	SIGNATURE(StartBrassEffect, void, CTFMinigun, this);
 };
 
 class CWeaponMedigun : public CTFWeaponBase
@@ -278,9 +357,23 @@ public:
 	NETVAR(m_hLastHealingTarget, EHANDLE, "CWeaponMedigun", "m_hLastHealingTarget");
 	NETVAR(m_flChargeLevel, float, "CWeaponMedigun", "m_flChargeLevel");
 
+	NETVAR_OFF(m_bReloadDown, bool, "CWeaponMedigun", "m_nChargeResistType", 11);
+
+	inline bool IsReleasingCharge()
+	{
+		return m_bChargeRelease() && !m_bHolstered();
+	}
+
 	int GetMedigunType();
 	MedigunChargeTypes GetChargeType();
 	medigun_resist_types_t GetResistType();
+};
+
+class CPasstimeGun : public CTFWeaponBase
+{
+public:
+	NETVAR(m_eThrowState, int, "CPasstimeGun", "m_eThrowState");
+	NETVAR(m_fChargeBeginTime, float, "CPasstimeGun", "m_fChargeBeginTime");
 };
 
 class CTFPipebombLauncher : public CTFWeaponBase
@@ -294,6 +387,51 @@ public:
 	int GetDetonateType();
 };
 
+class CTFCompoundBow : public CTFPipebombLauncher
+{
+public:
+	NETVAR(m_bArrowAlight, bool, "CTFCompoundBow", "m_bArrowAlight");
+	NETVAR(m_bNoFire, bool, "CTFCompoundBow", "m_bNoFire");
+};
+
+class CTFRocketLauncher : public CTFWeaponBaseGun
+{
+public:
+
+};
+
+class CTFCrossbow : public CTFRocketLauncher
+{
+public:
+	NETVAR(m_flRegenerateDuration, float, "CTFCrossbow", "m_flRegenerateDuration");
+	NETVAR(m_flLastUsedTimestamp, float, "CTFCrossbow", "m_flLastUsedTimestamp");
+};
+
+class CTFRaygun : public CTFRocketLauncher
+{
+public:
+	NETVAR(m_bUseNewProjectileCode, bool, "CTFRaygun", "m_bUseNewProjectileCode");
+};
+
+class CTFFlameThrower : public CTFWeaponBaseGun
+{
+public:
+	NETVAR(m_iWeaponState, int, "CTFFlameThrower", "m_iWeaponState");
+	NETVAR(m_bCritFire, bool, "CTFFlameThrower", "m_bCritFire");
+	NETVAR(m_bHitTarget, bool, "CTFFlameThrower", "m_bHitTarget");
+	NETVAR(m_flChargeBeginTime, float, "CTFFlameThrower", "m_flChargeBeginTime");
+	NETVAR(m_iActiveFlames, int, "CTFFlameThrower", "m_iActiveFlames");
+	NETVAR(m_iDamagingFlames, int, "CTFFlameThrower", "m_iDamagingFlames");
+	NETVAR(m_hFlameManager, EHANDLE, "CTFFlameThrower", "m_hFlameManager");
+	NETVAR(m_bHasHalloweenSpell, bool, "CTFFlameThrower", "m_bHasHalloweenSpell");
+};
+
+class CTFWeaponFlameBall : public CTFFlameThrower
+{
+public:
+	NETVAR(m_flRechargeScale, float, "CTFWeaponFlameBall", "m_flRechargeScale");
+};
+
 class CTFSniperRifle : public CTFWeaponBase
 {
 public:
@@ -302,6 +440,12 @@ public:
 	int GetRifleType();
 	float GetHeadshotMult(CTFPlayer* pTarget = nullptr);
 	float GetBodyshotMult(CTFPlayer* pTarget = nullptr);
+};
+
+class CTFSniperRifleClassic : public CTFSniperRifle
+{
+public:
+	NETVAR(m_bCharging, bool, "CTFSniperRifleClassic", "m_bCharging");
 };
 
 class CTFGrenadeLauncher : public CTFWeaponBase
@@ -314,12 +458,6 @@ public:
 	int GetDetonateType();
 };
 
-class CTFSniperRifleClassic : public CTFSniperRifle
-{
-public:
-	NETVAR(m_bCharging, bool, "CTFSniperRifleClassic", "m_bCharging");
-};
-
 class CTFParticleCannon : public CTFWeaponBase
 {
 public:
@@ -330,13 +468,33 @@ public:
 class CTFFlareGun : public CTFWeaponBase
 {
 public:
+	NETVAR(m_flChargeBeginTime, float, "CTFFlareGun", "m_flChargeBeginTime");
+
 	int GetFlareGunType();
 };
 
-class CTFThrowable : public CTFWeaponBase
+class CTFFlareGun_Revenge : public CTFFlareGun
+{
+public:
+	NETVAR(m_fLastExtinguishTime, float, "CTFFlareGun_Revenge", "m_fLastExtinguishTime");
+};
+
+class CTFJar : public CTFWeaponBaseGun
+{
+public:
+
+};
+
+class CTFThrowable : public CTFJar
 {
 public:
 	NETVAR(m_flChargeBeginTime, float, "CTFThrowable", "m_flChargeBeginTime");
+};
+
+class CTFLunchBox : public CTFWeaponBase
+{
+public:
+	NETVAR(m_bBroken, int, "CTFLunchBox", "m_bBroken");
 };
 
 class CTFGrapplingHook : public CTFWeaponBase
@@ -352,4 +510,16 @@ public:
 	NETVAR(m_iSelectedSpellIndex, int, "CTFSpellBook", "m_iSelectedSpellIndex");
 	NETVAR(m_iSpellCharges, int, "CTFSpellBook", "m_iSpellCharges");
 	NETVAR(m_bFiredAttack, bool, "CTFSpellBook", "m_bFiredAttack");
+};
+
+class CTFBottle : public CTFWeaponBaseMelee
+{
+public:
+
+};
+
+class CTFStickBomb : public CTFBottle
+{
+public:
+	NETVAR(m_iDetonated, int, "CTFStickBomb", "m_iDetonated");
 };
