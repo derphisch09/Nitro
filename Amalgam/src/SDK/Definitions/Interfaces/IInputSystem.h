@@ -58,6 +58,8 @@ public:
 	virtual const wchar_t* GetSteamControllerFontCharacterForActionOrigin(EControllerActionOrigin origin) = 0;
 	virtual const wchar_t* GetSteamControllerDescriptionForActionOrigin(EControllerActionOrigin origin) = 0;
 	virtual void SetSkipControllerInitialization(bool bSkip) = 0;
+
+	//VIRTUAL(ResetInputState, void*, 25, this);
 };
 
 MAKE_INTERFACE_VERSION(IInputSystem, InputSystem, "inputsystem.dll", "InputSystemVersion001");
