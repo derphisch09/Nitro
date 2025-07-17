@@ -146,5 +146,8 @@ public:
 		return false;
 	}
 
-	template <typename T> inline T* As() { return reinterpret_cast<T*>(this); }
+	template <typename T> inline T* As() 
+	{ 
+		return reinterpret_cast<T*>(this);
+	}
 };
