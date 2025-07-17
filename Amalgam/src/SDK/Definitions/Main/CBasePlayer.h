@@ -4,6 +4,10 @@
 #include "CUserCmd.h"
 
 MAKE_SIGNATURE(CBasePlayer_GetAmmoCount, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 48 63 DA 48 8B F9 83 FB", 0x0);
+MAKE_SIGNATURE(CBasePlayer_GetFOV, "client.dll", "40 53 48 83 EC ? 48 8B D9 0F 29 74 24 ? 48 8B 0D ? ? ? ? 48 8B 01", 0x0);
+MAKE_SIGNATURE(CBasePlayer_InFirstPersonView, "client.dll", "E8 ? ? ? ? 48 8B 17 84 C0", 0x0);
+MAKE_SIGNATURE(CBasePlayer_UpdateButtonState, "client.dll", "44 8B 81 24 16", 0x0);
+MAKE_SIGNATURE(CBasePlayer_UsingStandardWeaponsInVehicle, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 8B 91 ? ? ? ? 48 8B F9 85 D2 74 ? B8 ? ? ? ? 83 FA ? 74 ? 0F B7 C2 4C 8B 05", 0x0);
 
 class CBasePlayer : public CBaseCombatCharacter
 {
@@ -71,6 +75,8 @@ public:
 	NETVAR_OFF(m_nButtons, int, "CBasePlayer", "m_hConstraintEntity", -12);
 	NETVAR_OFF(m_pCurrentCommand, CUserCmd*, "CBasePlayer", "m_hConstraintEntity", -8);
 	NETVAR_OFF(m_afButtonLast, int, "CBasePlayer", "m_hConstraintEntity", -24);
+	NETVAR_OFF(m_afButtonPressed, int, "CBasePlayer", "m_hConstraintEntity", -20);
+	NETVAR_OFF(m_afButtonReleased, int, "CBasePlayer", "m_hConstraintEntity", -16);
 	NETVAR_OFF(m_flWaterJumpTime, float, "CBasePlayer", "m_fOnTarget", -60);
 	NETVAR_OFF(m_flSwimSoundTime, float, "CBasePlayer", "m_fOnTarget", -44);
 	NETVAR_OFF(m_vecLadderNormal, Vec3, "CBasePlayer", "m_fOnTarget", -36);
@@ -79,18 +85,36 @@ public:
 	NETVAR_OFF(m_surfaceFriction, float, "CBasePlayer", "m_szLastPlaceName", 32);
 	NETVAR_OFF(m_chTextureType, char, "CBasePlayer", "m_szLastPlaceName", 36);
 	NETVAR_OFF(m_hMyWearables, CUtlVector<CHandle<CEconWearable>>, "CBasePlayer", "m_szLastPlaceName", 56);
+	NETVAR_OFF(m_iMetalCount, int, "CBasePlayer", "m_iAmmo", 12);
 
 	CONDGET(IsOnGround, m_fFlags(), FL_ONGROUND);
 	CONDGET(IsInWater, m_fFlags(), FL_INWATER);
 	CONDGET(IsDucking, m_fFlags(), FL_DUCKING);
 
-	VIRTUAL(PreThink, void, 262, this);
-	VIRTUAL(Think, void, 122, this);
-	VIRTUAL(PostThink, void, 263, this);
+	//VIRTUAL(PreThink, void, 262, this);
+	//VIRTUAL(Think, void, 122, this);
+	//VIRTUAL(PostThink, void, 263, this);
 	VIRTUAL(GetRenderedWeaponModel, CBaseAnimating*, 252, this);
 	VIRTUAL_ARGS(SelectItem, void, 272, (const char* ptr, int subtype), this, ptr, subtype);
+	VIRTUAL(ItemPostFrame, void, 265, this);
 
 	SIGNATURE_ARGS(GetAmmoCount, int, CBasePlayer, (int iAmmoType), this, iAmmoType);
+	SIGNATURE(GetFOV, float, CBasePlayer, this);
+	SIGNATURE(InFirstPersonView, bool, CBasePlayer, this);
+	SIGNATURE_ARGS(UpdateButtonState, void, CBasePlayer, (uint32_t buttons), this, buttons);
+	SIGNATURE(UsingStandardWeaponsInVehicle, bool, CBasePlayer, this);
+
+	inline void SetCurrentCmd(CUserCmd* pCmd)
+	{
+		static int nOffset = U::NetVars.GetNetVar("CBasePlayer", "m_hConstraintEntity") - 8;
+		*reinterpret_cast<CUserCmd**>(uintptr_t(this) + nOffset) = pCmd;
+	}
+
+	inline int& GetImpulse()
+	{
+		static const int nOffset = U::NetVars.GetNetVar("CBasePlayer", "m_iBonusChallenge") + 68;
+		return *reinterpret_cast<int*>(reinterpret_cast<DWORD_PTR>(this) + nOffset);
+	}
 
 	bool IsAlive();
 	Vec3 GetShootPos();
