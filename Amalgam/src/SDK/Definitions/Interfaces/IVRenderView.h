@@ -198,6 +198,14 @@ public:
 		float blend[3] = { clr.r / 255.f, clr.g / 255.f, clr.b / 255.f };
 		SetColorModulation(blend);
 	}
+
+	Color_t GetColorModulation()
+	{
+		float blend[3] = {};
+		GetColorModulation(blend);
+
+		return { static_cast<uint8_t>(blend[0] * 255.0f), static_cast<uint8_t>(blend[1] * 255.0f), static_cast<uint8_t>(blend[2] * 255.0f), 255 };
+	}
 };
 
 MAKE_INTERFACE_VERSION(IVRenderView, RenderView, "engine.dll", "VEngineRenderView014");
