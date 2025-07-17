@@ -22,6 +22,7 @@ bool CTraceFilterHitscan::ShouldHitEntity(IHandleEntity* pServerEntity, int nCon
 	switch (pEntity->GetClassID())
 	{
 	case ETFClassID::CTFAmmoPack:
+		return false;
 	case ETFClassID::CFuncAreaPortalWindow:
 	case ETFClassID::CFuncRespawnRoomVisualizer:
 	case ETFClassID::CTFReviveMarker: return false;
@@ -40,6 +41,7 @@ bool CTraceFilterHitscan::ShouldHitEntity(IHandleEntity* pServerEntity, int nCon
 
 	return true;
 }
+
 TraceType_t CTraceFilterHitscan::GetTraceType() const
 {
 	return TRACE_EVERYTHING;
@@ -97,9 +99,48 @@ bool CTraceFilterCollideable::ShouldHitEntity(IHandleEntity* pServerEntity, int 
 
 	return false;
 }
+<<<<<<< Updated upstream
 TraceType_t CTraceFilterCollideable::GetTraceType() const
+=======
+
+TraceType_t CTraceFilterProjectile::GetTraceType() const
+>>>>>>> Stashed changes
 {
 	return TRACE_EVERYTHING;
+}
+
+bool CTraceFilterEntitiesOnly::ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask)
+{
+	if (!pServerEntity || pServerEntity == pSkip)
+		return false;
+
+	if (pServerEntity->GetRefEHandle().GetSerialNumber() == (1 << 15))
+		return I::ClientEntityList->GetClientEntity(0) != pSkip;
+
+	auto pEntity = reinterpret_cast<CBaseEntity*>(pServerEntity);
+
+	switch (pEntity->GetClassID())
+	{
+	case ETFClassID::CBaseEntity:
+	case ETFClassID::CFuncConveyor: return true;
+	case ETFClassID::CFuncRespawnRoomVisualizer:
+		if (nContentsMask & MASK_PLAYERSOLID)
+		{
+			switch (pEntity->m_iTeamNum())
+			{
+			case TF_TEAM_RED: return nContentsMask & CONTENTS_REDTEAM;
+			case TF_TEAM_BLUE: return nContentsMask & CONTENTS_BLUETEAM;
+			}
+		}
+
+	}
+
+	return false;
+}
+
+TraceType_t CTraceFilterEntitiesOnly::GetTraceType() const
+{
+	return TRACE_ENTITIES_ONLY;
 }
 
 bool CTraceFilterWorldAndPropsOnly::ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask)
@@ -121,7 +162,8 @@ bool CTraceFilterWorldAndPropsOnly::ShouldHitEntity(IHandleEntity* pServerEntity
 	case ETFClassID::CPhysicsPropMultiplayer:
 	case ETFClassID::CObjectCartDispenser:
 	case ETFClassID::CFuncTrackTrain:
-	case ETFClassID::CFuncConveyor: return true;
+	case ETFClassID::CFuncConveyor: 
+		return true;
 	case ETFClassID::CFuncRespawnRoomVisualizer:
 		if (nContentsMask & CONTENTS_PLAYERCLIP)
 			return pEntity->m_iTeamNum() != iTeam;
@@ -129,7 +171,105 @@ bool CTraceFilterWorldAndPropsOnly::ShouldHitEntity(IHandleEntity* pServerEntity
 
 	return false;
 }
+
 TraceType_t CTraceFilterWorldAndPropsOnly::GetTraceType() const
 {
 	return TRACE_EVERYTHING_FILTER_PROPS;
+}
+
+#define MOVEMENT_COLLISION_GROUP 8
+#define RED_CONTENTS_MASK 0x800
+#define BLU_CONTENTS_MASK 0x1000
+
+bool CTraceFilterNavigation::ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask)
+{
+	if (!pServerEntity)
+		return false;
+
+	auto pEntity = reinterpret_cast<CBaseEntity*>(pServerEntity);
+
+	if (pEntity->entindex() != 0 && pEntity->GetClassID() != ETFClassID::CBaseEntity)
+	{
+		if (pEntity->GetClassID() == ETFClassID::CFuncRespawnRoomVisualizer)
+		{
+			auto pLocal = H::Entities.GetLocal();
+			const int iTargetTeam = pEntity->m_iTeamNum(), iLocalTeam = pLocal ? pLocal->m_iTeamNum() : iTargetTeam;
+
+			if (!pEntity->ShouldCollide(MOVEMENT_COLLISION_GROUP, iLocalTeam == TF_TEAM_RED ? RED_CONTENTS_MASK : BLU_CONTENTS_MASK))
+				return true;
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+TraceType_t CTraceFilterNavigation::GetTraceType() const
+{
+	return TRACE_EVERYTHING;
+}
+
+bool CTraceFilterWorldCustom::ShouldHitEntity(IHandleEntity* pServerEntity, int contentsMask)
+{
+	auto pEntity = reinterpret_cast<CBaseEntity*>(pServerEntity);
+
+	switch (pEntity->GetClassID())
+	{
+	case ETFClassID::CTFPlayer:
+	case ETFClassID::CObjectSentrygun:
+	case ETFClassID::CObjectDispenser:
+	case ETFClassID::CObjectTeleporter:
+		return pEntity == pSkip;
+	case ETFClassID::CObjectCartDispenser:
+	case ETFClassID::CBaseDoor:
+	case ETFClassID::CPhysicsProp:
+	case ETFClassID::CDynamicProp:
+	case ETFClassID::CBaseEntity:
+	case ETFClassID::CFuncTrackTrain:
+		return true;
+	default: 
+		return false;
+	}
+
+	return false;
+}
+
+TraceType_t CTraceFilterWorldCustom::GetTraceType() const
+{
+	return TRACE_EVERYTHING;
+}
+
+bool CTraceFilterArc::ShouldHitEntity(IHandleEntity* pServerEntity, int contentsMask)
+{
+	auto pEntity = reinterpret_cast<CBaseEntity*>(pServerEntity);
+
+	switch (pEntity->GetClassID())
+	{
+	case ETFClassID::CTFPlayer:
+	case ETFClassID::CObjectSentrygun:
+	case ETFClassID::CObjectDispenser:
+	case ETFClassID::CObjectTeleporter:
+	case ETFClassID::CObjectCartDispenser:
+	case ETFClassID::CBaseDoor:
+	case ETFClassID::CPhysicsProp:
+	case ETFClassID::CDynamicProp:
+	case ETFClassID::CBaseEntity:
+	case ETFClassID::CFuncTrackTrain:
+	{
+		return true;
+	}
+
+	default:
+	{
+		return false;
+	}
+	}
+
+	return false;
+}
+
+TraceType_t CTraceFilterArc::GetTraceType() const
+{
+	return TRACE_EVERYTHING;
 }
