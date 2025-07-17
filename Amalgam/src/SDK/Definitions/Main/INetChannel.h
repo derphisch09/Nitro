@@ -57,8 +57,77 @@ public:
 	virtual int GetProtocolVersion() = 0;
 };
 
+typedef void* FileHandle_t;
+
 class CNetChannel : public INetChannel
 {
+	typedef struct dataFragments_s
+	{
+		FileHandle_t file;                 // open file handle
+		char         filename[260]; // filename
+		char* buffer;               // if NULL it's a file
+		unsigned int BYTEs;                // size in BYTEs
+		unsigned int bits;                 // size in bits
+		unsigned int transferID;           // only for files
+		bool         isCompressed;         // true if data is bzip compressed
+		unsigned int nUncompressedSize;    // full size in BYTEs
+		bool         asTCP;                // send as TCP stream
+		int          numFragments;         // number of total fragments
+		int          ackedFragments;       // number of fragments send & acknowledged
+		int          pendingFragments;     // number of fragments send, but not acknowledged yet
+	} dataFragments_t;
+
+	struct subChannel_s
+	{
+		int startFraggment[MAX_STREAMS];
+		int numFragments[MAX_STREAMS];
+		int sendSeqNr;
+		int state; // 0 = free, 1 = scheduled to send, 2 = send & waiting, 3 = dirty
+		int index; // index in m_SubChannels[]
+	};
+
+	typedef struct netframe_s
+	{
+		float          time;        // net_time received/send
+		int            size;        // total size in BYTEs
+		float          latency;     // raw ping for this packet, not cleaned. set when acknowledged otherwise -1.
+		float          avg_latency; // averaged ping for this packet
+		bool           valid;       // false if dropped, lost, flushed
+		int            choked;      // number of previously chocked packets
+		int            dropped;
+		float          m_flInterpolationAmount;
+		unsigned short msggroups[TOTAL]; // received BYTEs for each message group
+	} netframe_t;
+
+	typedef struct
+	{
+		float       nextcompute;      // Time when we should recompute k/sec data
+		float       avgBYTEspersec;   // average BYTEs/sec
+		float       avgpacketspersec; // average packets/sec
+		float       avgloss;          // average packet loss [0..1]
+		float       avgchoke;         // average packet choke [0..1]
+		float       avglatency;       // average ping, not cleaned
+		float       latency;          // current ping, more accurate also more jittering
+		int         totalpackets;     // total processed packets
+		int         totalBYTEs;       // total processed BYTEs
+		int         currentindex;     // current frame index
+		netframe_t  frames[64];       // frame history
+		netframe_t* currentframe;     // current frame
+	} netflow_t;
+
+	typedef struct netpacket_s
+	{
+		netadr_t		from;		// sender IP
+		int				source;		// received source 
+		double			received;	// received time
+		unsigned char* data;		// pointer to raw packet data
+		bf_read			message;	// easy bitbuf data access
+		int				size;		// size in bytes
+		int				wiresize;   // size in bytes before decompression
+		bool			stream;		// was send as stream
+		struct netpacket_s* pNext;	// for internal use, should be NULL in public
+	} netpacket_t;
+
 public:
 	virtual ConnectionStatus_t GetConnectionState();
 	virtual const netadr_t& GetRemoteAddress(void) const;
