@@ -32,13 +32,28 @@ public:
 	void ScalePlayers(CBaseEntity* pLocal);
 	void RestorePlayers();
 
+	void Update();
+	int GetLatestCommandNumber();
+
+	int GetTickbase(CTFPlayer* pLocal, CUserCmd* pCmd);
+	float GetServerTime();
+
 	bool m_bInPrediction = false;
+	bool m_bPostThink = false;
+	bool m_bSimulated = false;
+
+	int m_iServerTicks = 0;
 
 	// localplayer use in net_update_end
 	Vec3 m_vOrigin = {};
 	Vec3 m_vVelocity = {};
 	Vec3 m_vDirection = {};
 	Vec3 m_vAngles = {};
+
+	inline bool IsInEnginePrediction() const
+	{
+		return m_bInPrediction;
+	}
 };
 
 ADD_FEATURE(CEnginePrediction, EnginePrediction);
