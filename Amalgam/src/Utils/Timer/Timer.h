@@ -15,4 +15,14 @@ public:
 	bool Check(float flS) const;
 	bool Run(float flS);
 	inline void Update();
+
+	inline void operator-=(float flS)
+	{
+		m_flLast -= flS;
+	}
+
+	inline void operator+=(float flS)
+	{
+		m_flLast += flS;
+	}
 };
