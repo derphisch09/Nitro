@@ -8,7 +8,9 @@
 #define FRIEND_TAG (CHEATER_TAG-1)
 #define PARTY_TAG (FRIEND_TAG-1)
 #define F2P_TAG (PARTY_TAG-1)
-#define TAG_COUNT (-F2P_TAG)
+#define FRIEND_IGNORE_TAG (F2P_TAG-1)
+#define BOT_IGNORE_TAG (FRIEND_IGNORE_TAG-1)
+#define TAG_COUNT (-BOT_IGNORE_TAG)
 
 struct ListPlayer
 {
@@ -24,6 +26,12 @@ struct ListPlayer
 	bool m_bF2P;
 	int m_iLevel;
 	uint64_t m_iParty;
+};
+
+struct BotIgnoreData
+{
+	int m_iKillCount = 0;
+	bool m_bIsIgnored = false;
 };
 
 struct PriorityLabel_t
@@ -86,7 +94,12 @@ public:
 	bool IsPrioritized(uint32_t uFriendsID);
 	bool IsPrioritized(int iIndex);
 
+	void IncrementBotIgnoreKillCount(uint32_t uFriendsID);
+
 	const char* GetPlayerName(int iIndex, const char* sDefault, int* pType = nullptr);
+	
+	bool ContainsSpecialChars(const std::string& name);
+	void ProcessSpecialCharsInName(uint32_t uFriendsID, const std::string& name);
 
 	void UpdatePlayers();
 	std::mutex m_mutex;
@@ -94,6 +107,7 @@ public:
 public:
 	std::unordered_map<uint32_t, std::vector<int>> m_mPlayerTags = {};
 	std::unordered_map<uint32_t, std::string> m_mPlayerAliases = {};
+	std::unordered_map<uint32_t, BotIgnoreData> m_mBotIgnoreData = {};
 
 	std::vector<PriorityLabel_t> m_vTags = {
 		{ "Default", { 200, 200, 200, 255 }, 0, false, false, true },
@@ -101,7 +115,9 @@ public:
 		{ "Cheater", { 255, 100, 100, 255 }, 1, false, true, true },
 		{ "Friend", { 100, 255, 100, 255 }, 0, true, false, true },
 		{ "Party", { 100, 100, 255, 255 }, 0, true, false, true },
-		{ "F2P", { 255, 255, 255, 255 }, 0, true, false, true }
+		{ "F2P", { 255, 255, 255, 255 }, 0, true, false, true },
+		{ "Friend Ignore", { 255, 100, 100, 255 }, -1, false, true, true },
+		{ "Bot Ignore", { 255, 100, 100, 255 }, -1, false, true, true }
 	};
 
 	std::vector<ListPlayer> m_vPlayerCache = {};
@@ -109,6 +125,16 @@ public:
 
 	bool m_bLoad = true;
 	bool m_bSave = false;
+	
+	// Thai characters to check for auto-tagging
+	const std::vector<unsigned char> m_vSpecialChars = { 
+		0xE0, 0xB9, 0x87,  // '็'
+		0xE0, 0xB9, 0x88,  // '่'
+		0xE0, 0xB9, 0x8A,  // '๊'
+		0xE0, 0xB9, 0x8B,  // '๋'
+		0xE0, 0xB9, 0x8C,  // '์'
+		0xE0, 0xB9, 0xB9   // 'ู'
+	};
 };
 
-ADD_FEATURE(CPlayerlistUtils, PlayerUtils);
+ADD_FEATURE(CPlayerlistUtils, PlayerUtils)
