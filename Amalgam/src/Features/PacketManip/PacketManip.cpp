@@ -3,6 +3,11 @@
 #include "../Visuals/FakeAngle/FakeAngle.h"
 #include "../Ticks/Ticks.h"
 
+static inline bool WillTimeOut()
+{
+	return I::ClientState->chokedcommands >= 21;
+}
+
 static inline bool AntiAimCheck(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 {
 	return F::AntiAim.YawOn() && F::AntiAim.ShouldRun(pLocal, pWeapon, pCmd) && !F::Ticks.m_bRecharge
@@ -14,7 +19,11 @@ void CPacketManip::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd
 	F::FakeAngle.bDrawChams = Vars::Fakelag::Fakelag.Value || F::AntiAim.AntiAimOn();
 
 	*pSendPacket = true;
-	F::FakeLag.Run(pLocal, pWeapon, pCmd, pSendPacket);
-	if (AntiAimCheck(pLocal, pWeapon, pCmd))
+	const bool bTimeout = WillTimeOut();
+
+	if (!bTimeout)
+		F::FakeLag.Run(pLocal, pWeapon, pCmd, pSendPacket);
+
+	if (!bTimeout && AntiAimCheck(pLocal, pWeapon, pCmd) && !G::PSilentAngles)
 		*pSendPacket = false;
 }
