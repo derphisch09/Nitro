@@ -13,8 +13,13 @@
 bool CAimbot::ShouldRun(CTFPlayer* pLocal, CTFWeaponBase* pWeapon)
 {
 	if (!pLocal || !pWeapon || !pLocal->CanAttack()
+<<<<<<< Updated upstream
 		|| !SDK::AttribHookValue(1, "mult_dmg", pWeapon)
 		|| I::EngineVGui->IsGameUIVisible())
+=======
+		|| SDK::AttribHookValue(1, "mult_dmg", pWeapon) == 0
+		/*|| I::EngineVGui->IsGameUIVisible()*/)
+>>>>>>> Stashed changes
 		return false;
 
 	return true;
