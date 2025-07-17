@@ -23,10 +23,29 @@ namespace Math
 		return a + (b - a) * t;
 	}
 
+	inline Vec3 Lerp(Vec3 a, Vec3 b, float t)
+	{
+		Vec3 ret = {
+			std::lerp(a.x, b.x, t),
+			std::lerp(a.y, b.y, t),
+			std::lerp(a.z, b.z, t)
+		};
+
+		return ret;
+	}
+
 	inline float SimpleSpline(float val)
 	{
 		float flSquared = powf(val, 2);
 		return 3 * flSquared - 2 * flSquared * val;
+	}
+
+	inline float Remap(float val, float in_min, float in_max, float out_min, float out_max)
+	{
+		if (in_min == in_max)
+			return val >= in_max ? out_max : out_min;
+
+		return out_min + (out_max - out_min) * std::clamp((val - in_min) / (in_max - in_min), 0.0f, 1.0f);
 	}
 
 	inline float RemapVal(float flVal, float a, float b, float c, float d, bool bClamp = true)
@@ -39,6 +58,17 @@ namespace Math
 			t = std::clamp(t, 0.f, 1.f);
 
 		return Lerp(c, d, t);
+	}
+
+	inline float RemapValClamped(float val, float A, float B, float C, float D)
+	{
+		if (A == B)
+			return val >= B ? D : C;
+
+		float cVal = (val - A) / (B - A);
+		cVal = std::clamp(cVal, 0.0f, 1.0f);
+
+		return C + (D - C) * cVal;
 	}
 
 	inline float SimpleSplineRemapVal(float flVal, float a, float b, float c, float d, bool bClamp = true)
@@ -62,6 +92,18 @@ namespace Math
 	{
 		*pSin = std::sin(flRadians);
 		*pCos = std::cos(flRadians);
+	}
+
+	inline float NormalizeAngle2(float flAngle)
+	{
+		float f = (flAngle * (1.0f / 360.0f)) + 0.5f;
+		int i = (int)f;
+
+		float fi = (float)i;
+		f = (f < 0.0f && f != fi) ? fi - 1.0f : fi;
+
+		flAngle -= f * 360.0f;
+		return flAngle;
 	}
 
 	inline float NormalizeAngle(float flAngle, float flRange = 360.f)
@@ -260,6 +302,60 @@ namespace Math
 		}
 	}
 
+	inline bool RayVsBox(Vec3& ray_origin, Vec3& ray_angles, Vec3& box_origin, Vec3& box_mins, Vec3& box_maxs)
+	{
+		Vec3 ray_dir = Vec3();
+		AngleVectors(ray_angles, &ray_dir);
+
+		Vec3 box_min_world = box_origin + box_mins;
+		Vec3 box_max_world = box_origin + box_maxs;
+
+		float tmin = (box_min_world.x - ray_origin.x) / ray_dir.x;
+		float tmax = (box_max_world.x - ray_origin.x) / ray_dir.x;
+
+		if (tmin > tmax)
+			std::swap(tmin, tmax);
+
+		float tymin = (box_min_world.y - ray_origin.y) / ray_dir.y;
+		float tymax = (box_max_world.y - ray_origin.y) / ray_dir.y;
+
+		if (tymin > tymax) 
+			std::swap(tymin, tymax);
+
+		if ((tmin > tymax) || (tymin > tmax))
+			return false;
+
+		if (tymin > tmin) 
+			tmin = tymin;
+
+		if (tymax < tmax)
+			tmax = tymax;
+
+		float tzmin = (box_min_world.z - ray_origin.z) / ray_dir.z;
+		float tzmax = (box_max_world.z - ray_origin.z) / ray_dir.z;
+
+		if (tzmin > tzmax)
+			std::swap(tzmin, tzmax);
+
+		if ((tmin > tzmax) || (tzmin > tmax))
+			return false;
+
+		if (tzmin > tmin)
+			tmin = tzmin;
+
+		if (tzmax < tmax)
+			tmax = tzmax;
+
+		return tmax >= 0.0f && tmin <= tmax;
+	}
+
+	inline void MatrixGetColumn(const matrix3x4& matrix, int column, Vec3& out)
+	{
+		out.x = matrix[0][column];
+		out.y = matrix[1][column];
+		out.z = matrix[2][column];
+	}
+
 	inline void MatrixAngles(const matrix3x4& mMatrix, Vec3& vAngles)
 	{
 		const Vec3 vForward = { mMatrix[0][0], mMatrix[1][0], mMatrix[2][0] };
@@ -278,6 +374,29 @@ namespace Math
 			vAngles.x = RAD2DEG(std::atan2(-vForward.z, flLen));
 			vAngles.y = RAD2DEG(std::atan2(-vLeft.x, vLeft.y));
 			vAngles.z = 0;
+		}
+	}
+
+	inline void RotateTriangle2D(std::array<Vec2, 3>& points, float rotation)
+	{
+		Vec2 center = (points[0] + points[1] + points[2]) / 3;
+
+		for (Vec2& point : points)
+		{
+			point -= center;
+
+		    float temp_x = point.x;
+			float temp_y = point.y;
+
+			float theta = DEG2RAD(rotation);
+
+			float c = cosf(theta);
+			float s = sinf(theta);
+
+			point.x = temp_x * c - temp_y * s;
+			point.y = temp_x * s + temp_y * c;
+
+			point += center;
 		}
 	}
 
