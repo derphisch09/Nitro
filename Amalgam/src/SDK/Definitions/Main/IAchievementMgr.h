@@ -38,6 +38,8 @@ public:
 	virtual bool WereCheatsEverOn() = 0;
 };
 
+//MAKE_INTERFACE_VERSION(IAchievementMgr, AchievementMgr, "engine.dll", "ACHIEVEMENTMGR_INTERFACE_VERSION001");
+
 // flags for IAchievement::GetFlags
 
 #define ACH_LISTEN_KILL_EVENTS				0x0001
