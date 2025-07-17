@@ -63,21 +63,87 @@ void CMenu::DrawMenu()
 			flOffset = H::Draw.Scale(36);
 			pDrawList->AddRectFilled({ vDrawPos.x, vDrawPos.y + H::Draw.Scale(35) }, { vDrawPos.x + H::Draw.Scale(flSideSize - 1), vDrawPos.y + H::Draw.Scale(36) }, F::Render.Background2);
 			
-			SetCursorPos({ H::Draw.Scale(12), H::Draw.Scale(11) });
-			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
-			FText(TruncateText(Vars::Menu::CheatTitle.Value, H::Draw.Scale(flSideSize - 28), F::Render.FontBold).c_str(), 0, F::Render.FontBold);
-			PopStyleColor();
+			//SetCursorPos({ H::Draw.Scale(12), H::Draw.Scale(11) });
+			//PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
+			//FText(TruncateText(Vars::Menu::CheatTitle.Value, H::Draw.Scale(flSideSize - 28), F::Render.FontBold).c_str(), 0, F::Render.FontBold);
+			//PopStyleColor();
+
+			std::string fullTitleStdStr = Vars::Menu::CheatTitle.Value;
+
+			auto trim_string_safe = [](std::string& s_to_trim) 
+			{
+				size_t first_char = s_to_trim.find_first_not_of(" \t\n\r\f\v");
+
+				if (std::string::npos == first_char) 
+				{
+					s_to_trim = ""; // string is all whitespace
+					return;
+				}
+
+				size_t last_char = s_to_trim.find_last_not_of(" \t\n\r\f\v");
+				s_to_trim = s_to_trim.substr(first_char, (last_char - first_char + 1));
+			};
+
+			trim_string_safe(fullTitleStdStr);
+
+			if (!fullTitleStdStr.empty()) 
+			{
+				float sidebarDisplayWidth = H::Draw.Scale(flSideSize - 1.f);
+				float maxOverallTextWidth = sidebarDisplayWidth - H::Draw.Scale(8.f);
+
+				std::string titleToDisplay = TruncateText(fullTitleStdStr, maxOverallTextWidth, F::Render.FontBold);
+
+				std::string sPart1, sPart2;
+				size_t len = titleToDisplay.length();
+
+				size_t firstSpace = titleToDisplay.find(' ');
+				size_t lastSpace = titleToDisplay.rfind(' ');
+
+				if (firstSpace != std::string::npos && firstSpace == lastSpace) 
+				{ // Exactly one space
+					sPart1 = titleToDisplay.substr(0, firstSpace);
+					sPart2 = titleToDisplay.substr(firstSpace + 1);
+				}
+				else
+				{ // Zero or multiple spaces, or a single word
+					size_t mid = len / 2;
+					sPart1 = titleToDisplay.substr(0, mid);
+					sPart2 = titleToDisplay.substr(mid);
+				}
+
+				trim_string_safe(sPart1);
+				trim_string_safe(sPart2);
+
+				ImVec2 textSize1 = FCalcTextSize(sPart1.c_str(), F::Render.FontBold);
+				ImVec2 textSize2 = FCalcTextSize(sPart2.c_str(), F::Render.FontBold);
+				float totalActualTextWidth = textSize1.x + textSize2.x;
+
+				float startX = (sidebarDisplayWidth - totalActualTextWidth) / 2.0f;
+				startX = std::max(0.f, startX);
+
+				float currentY = H::Draw.Scale(11); // Vertical position for the text
+
+				SetCursorPos({ startX, currentY });
+				PushStyleColor(ImGuiCol_Text, F::Render.Active.Value); // Color for first part
+				FText(sPart1.c_str(), 0, F::Render.FontBold);
+				PopStyleColor();
+
+				SetCursorPos({ startX + textSize1.x, currentY });
+				PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value); // Color for second part
+				FText(sPart2.c_str(), 0, F::Render.FontBold);
+				PopStyleColor();
+			}
 		}
 
 		static int iTab = 0, iAimbotTab = 0, iVisualsTab = 0, iMiscTab = 0, iLogsTab = 0, iSettingsTab = 0;
 		PushFont(F::Render.FontBold);
 		FTabs(
 			{
-				{ "AIMBOT", "GENERAL", "HVH", "DRAW" },
-				{ "VISUALS", "ESP", "CHAMS", "GLOW", "MISC##", "RADAR", "MENU" },
-				{ "MISC" },
-				{ "LOGS", "PLAYERLIST", "SETTINGS##", "OUTPUT" },
-				{ "SETTINGS", "CONFIG", "BINDS", "MATERIALS", "EXTRA" }
+				{ "Aimbot", "General", "HvH", "Draw" },
+				{ "Visuals", "ESP", "Chams", "Glow", "Misc##", "Radar", "Menu" },
+				{ "Misc"},
+				{ "Logs", "PlayerList", "Settings##", "Output" },
+				{ "Settings", "Config", "Binds", "Materials", "Extra" }
 			},
 			{ &iTab, &iAimbotTab, &iVisualsTab, nullptr, &iLogsTab, &iSettingsTab },
 			{ H::Draw.Scale(flSideSize - 16), H::Draw.Scale(36) },
@@ -88,6 +154,11 @@ void CMenu::DrawMenu()
 			{}, { H::Draw.Scale(22), 0 }
 		);
 		PopFont();
+
+		SetCursorPos({ H::Draw.Scale(8), vWindowSize.y - H::Draw.Scale(60) });
+		PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
+		FText(Vars::Menu::CheatTitle.Value.c_str());
+		PopStyleColor();
 
 		static std::string sSearch = "";
 		SetCursorPos({ H::Draw.Scale(8), vWindowSize.y - H::Draw.Scale(37) });
@@ -166,6 +237,7 @@ void CMenu::MenuAimbot(int iTab)
 					FToggle(Vars::Aimbot::General::FOVCircle, FToggleEnum::Right);
 					FToggle(Vars::CritHack::ForceCrits, FToggleEnum::Left);
 					FToggle(Vars::CritHack::AvoidRandomCrits, FToggleEnum::Right);
+					//FColorPicker(Vars::Colors::NoSpread);
 					FToggle(Vars::CritHack::AlwaysMeleeCrit, FToggleEnum::Left);
 					FToggle(Vars::Aimbot::General::NoSpread, FToggleEnum::Right);
 				} EndSection();
@@ -213,6 +285,33 @@ void CMenu::MenuAimbot(int iTab)
 						FToggle(Vars::Aimbot::Healing::AutoVaccinatorFlamethrowerDamageOnly);
 					} EndSection();
 				}
+				if (Section("Melee", 8))
+				{
+					FToggle(Vars::Aimbot::Melee::AutoBackstab, FToggleEnum::Left);
+					FToggle(Vars::Aimbot::Melee::IgnoreRazorback, FToggleEnum::Right);
+					FToggle(Vars::Aimbot::Melee::SwingPrediction, FToggleEnum::Left);
+					FToggle(Vars::Aimbot::Melee::WhipTeam, FToggleEnum::Right);
+				} EndSection();
+				if (Vars::Debug::Options.Value)
+				{
+					if (Section("##Debug Melee"))
+					{
+						FSlider(Vars::Aimbot::Melee::SwingTicks, FSliderEnum::Left);
+						FToggle(Vars::Aimbot::Melee::SwingPredictLag, FToggleEnum::Right);
+						FToggle(Vars::Aimbot::Melee::BackstabAccountPing, FToggleEnum::Left);
+						FToggle(Vars::Aimbot::Melee::BackstabDoubleTest, FToggleEnum::Right);
+					} EndSection();
+				}
+				if (Section("Auto engie", 8))
+				{
+					FDropdown(Vars::Aimbot::Melee::AutoEngie::AutoRepair);
+					FDropdown(Vars::Aimbot::Melee::AutoEngie::AutoUpgrade);
+					FDropdown(Vars::Aimbot::Melee::AutoEngie::AutoRepairPrio);
+
+					FSlider(Vars::Aimbot::Melee::AutoEngie::AutoUpgradeSentryLVL);
+					FSlider(Vars::Aimbot::Melee::AutoEngie::AutoUpgradeDispenserLVL);
+					FSlider(Vars::Aimbot::Melee::AutoEngie::AutoUpgradeTeleporterLVL);
+				} EndSection();
 			}
 			/* Column 2 */
 			TableNextColumn();
@@ -312,23 +411,6 @@ void CMenu::MenuAimbot(int iTab)
 						FDropdown(Vars::Aimbot::Projectile::MovesimFrictionFlags);
 					} EndSection();
 				}
-				if (Section("Melee", 8))
-				{
-					FToggle(Vars::Aimbot::Melee::AutoBackstab, FToggleEnum::Left);
-					FToggle(Vars::Aimbot::Melee::IgnoreRazorback, FToggleEnum::Right);
-					FToggle(Vars::Aimbot::Melee::SwingPrediction, FToggleEnum::Left);
-					FToggle(Vars::Aimbot::Melee::WhipTeam, FToggleEnum::Right);
-				} EndSection();
-				if (Vars::Debug::Options.Value)
-				{
-					if (Section("##Debug Melee"))
-					{
-						FSlider(Vars::Aimbot::Melee::SwingTicks, FSliderEnum::Left);
-						FToggle(Vars::Aimbot::Melee::SwingPredictLag, FToggleEnum::Right);
-						FToggle(Vars::Aimbot::Melee::BackstabAccountPing, FToggleEnum::Left);
-						FToggle(Vars::Aimbot::Melee::BackstabDoubleTest, FToggleEnum::Right);
-					} EndSection();
-				}
 			}
 			EndTable();
 		}
@@ -407,6 +489,7 @@ void CMenu::MenuAimbot(int iTab)
 					FToggle(Vars::AntiAim::MinWalk, FToggleEnum::Left);
 					FToggle(Vars::AntiAim::AntiOverlap, FToggleEnum::Left);
 					FToggle(Vars::AntiAim::InvalidShootPitch, FToggleEnum::Right);
+					FToggle(Vars::AntiAim::LegJitter, FToggleEnum::Left);
 				} EndSection();
 			}
 			/* Column 2 */
@@ -1273,11 +1356,20 @@ void CMenu::MenuVisuals(int iTab)
 					PopTransparent();
 					PushTransparent(!(Vars::Visuals::World::Modulations.Value & Vars::Visuals::World::ModulationsEnum::Fog));
 					{
+<<<<<<< Updated upstream
 						FColorPicker(Vars::Colors::FogModulation, FColorPickerEnum::Left);
+=======
+						FColorPicker(Vars::Colors::FogModulation, 0, FColorPickerEnum::Left);
+						FSlider(Vars::Visuals::World::FogStart);
+						FSlider(Vars::Visuals::World::FogEnd);
+						FSlider(Vars::Visuals::World::FogMaxDensity);
+>>>>>>> Stashed changes
 					}
 					PopTransparent();
 					FToggle(Vars::Visuals::World::NearPropFade, FToggleEnum::Left);
 					FToggle(Vars::Visuals::World::NoPropFade, FToggleEnum::Right);
+					FDropdown(Vars::Visuals::World::PrecipitationType, FDropdownEnum::None, 0, &Hovered);
+					FTooltip("You can modify these in Console using r_rain and r_snow", Hovered);
 				} EndSection();
 				/*
 				if (Section("Other"))
@@ -1422,8 +1514,9 @@ void CMenu::MenuMisc(int iTab)
 					FToggle(Vars::Misc::Movement::Bunnyhop, FToggleEnum::Left);
 					FToggle(Vars::Misc::Movement::EdgeJump, FToggleEnum::Right);
 					FToggle(Vars::Misc::Movement::AutoJumpbug, FToggleEnum::Left); // this is unreliable without setups, do not depend on it!
-					FToggle(Vars::Misc::Movement::NoPush, FToggleEnum::Right);
-					FToggle(Vars::Misc::Movement::AutoRocketJump, FToggleEnum::Left);
+					//FToggle(Vars::Misc::Movement::NoPush, FToggleEnum::Right);
+					FToggle(Vars::Misc::Movement::AutoRocketJump, FToggleEnum::Right);
+					FToggle(Vars::Misc::Movement::AutoScoutJump, FToggleEnum::Left);
 					FToggle(Vars::Misc::Movement::AutoCTap, FToggleEnum::Right);
 					FToggle(Vars::Misc::Movement::FastStop, FToggleEnum::Left);
 					FToggle(Vars::Misc::Movement::FastAccelerate, FToggleEnum::Right);
@@ -1431,6 +1524,7 @@ void CMenu::MenuMisc(int iTab)
 					FToggle(Vars::Misc::Movement::MovementLock, FToggleEnum::Right);
 					FToggle(Vars::Misc::Movement::BreakJump, FToggleEnum::Left);
 					FToggle(Vars::Misc::Movement::ShieldTurnRate, FToggleEnum::Right);
+					FDropdown(Vars::Misc::Movement::NoPush);
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -1447,6 +1541,8 @@ void CMenu::MenuMisc(int iTab)
 					FToggle(Vars::Misc::Exploits::CheatsBypass, FToggleEnum::Right);
 					FToggle(Vars::Misc::Exploits::EquipRegionUnlock, FToggleEnum::Left);
 					FToggle(Vars::Misc::Exploits::BackpackExpander, FToggleEnum::Right);
+					FToggle(Vars::Misc::Exploits::ExtendFreeze, FToggleEnum::Left);
+					FToggle(Vars::Misc::Exploits::InfiniteEat, FToggleEnum::Right);
 					FToggle(Vars::Misc::Exploits::PingReducer);
 					PushTransparent(!Vars::Misc::Exploits::PingReducer.Value);
 					{
@@ -1465,6 +1561,17 @@ void CMenu::MenuMisc(int iTab)
 					FToggle(Vars::Misc::Automation::AutoF1Priority, FToggleEnum::Right);
 					FToggle(Vars::Misc::Automation::AcceptItemDrops);
 				} EndSection();
+				if (Section("AutoItem"))
+				{
+					FDropdown(Vars::Misc::Automation::AutoItem::Enable);
+					FSlider(Vars::Misc::Automation::AutoItem::Interval);
+					FSDropdown(Vars::Misc::Automation::AutoItem::Primary, FDropdownEnum::Left);
+					FSDropdown(Vars::Misc::Automation::AutoItem::FirstHat, FDropdownEnum::Right);
+					FSDropdown(Vars::Misc::Automation::AutoItem::Secondary, FDropdownEnum::Left);
+					FSDropdown(Vars::Misc::Automation::AutoItem::SecondHat, FDropdownEnum::Right);
+					FSDropdown(Vars::Misc::Automation::AutoItem::Melee, FDropdownEnum::Left);
+					FSDropdown(Vars::Misc::Automation::AutoItem::ThirdHat, FDropdownEnum::Right);
+				} EndSection();
 			}
 			/* Column 2 */
 			TableNextColumn();
@@ -1480,8 +1587,14 @@ void CMenu::MenuMisc(int iTab)
 				{
 					FToggle(Vars::Misc::Game::AntiCheatCompatibility, FToggleEnum::Left);
 					FToggle(Vars::Misc::Game::F2PChatBypass, FToggleEnum::Right);
+<<<<<<< Updated upstream
 					FToggle(Vars::Misc::Game::NetworkFix, FToggleEnum::Left);
 					FToggle(Vars::Misc::Game::SetupBonesOptimization, FToggleEnum::Right);
+=======
+					FToggle(Vars::Misc::Game::VACBypass, FToggleEnum::Left);
+					FToggle(Vars::Misc::Game::RemoveForcedConVars, FToggleEnum::Right);
+					FToggle(Vars::Misc::Game::AntiCheatCompatibility, FToggleEnum::Left);
+>>>>>>> Stashed changes
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -1495,6 +1608,17 @@ void CMenu::MenuMisc(int iTab)
 					FDropdown(Vars::Misc::Queueing::ForceRegions);
 					FToggle(Vars::Misc::Queueing::FreezeQueue, FToggleEnum::Left);
 					FToggle(Vars::Misc::Queueing::AutoCasualQueue, FToggleEnum::Right);
+					FToggle(Vars::Misc::Queueing::AutoCasualJoin, FToggleEnum::Left);
+					FSlider(Vars::Misc::Queueing::QueueDelay, FSliderEnum::None);
+					FToggle(Vars::Misc::Queueing::RQif, FToggleEnum::Right);
+					PushTransparent(!FGet(Vars::Misc::Queueing::RQif));
+					{
+						FSlider(Vars::Misc::Queueing::RQplt);
+						FToggle(Vars::Misc::Queueing::RQkick, FToggleEnum::Left);
+						FToggle(Vars::Misc::Queueing::RQLTM, FToggleEnum::Right);
+						FToggle(Vars::Misc::Queueing::RQIgnoreFriends, FToggleEnum::Left);
+					}
+					PopTransparent();
 				} EndSection();
 				if (Section("Mann vs. Machine", 8))
 				{
@@ -2172,7 +2296,7 @@ void CMenu::MenuLogs(int iTab)
 						file.close();
 
 						SDK::SetClipboard(sString);
-						SDK::Output("Amalgam", "Copied playerlist to clipboard", { 175, 150, 255 }, true, true, true);
+						SDK::Output("Arylcyclohexylamine", "Copied playerlist to clipboard", { 175, 150, 255 }, true, true, true);
 					}
 				}
 
@@ -2298,7 +2422,7 @@ void CMenu::MenuLogs(int iTab)
 						}
 						catch (...)
 						{
-							SDK::Output("Amalgam", "Failed to import playerlist", { 175, 150, 255, 127 }, true, true, true);
+							SDK::Output("Arylcyclohexylamine", "Failed to import playerlist", { 175, 150, 255, 127 }, true, true, true);
 						}
 					}
 
@@ -2359,7 +2483,7 @@ void CMenu::MenuLogs(int iTab)
 							}
 
 							F::PlayerUtils.m_bSave = true;
-							SDK::Output("Amalgam", "Imported playerlist", { 175, 150, 255 }, true, true, true);
+							SDK::Output("Arylcyclohexylamine", "Imported playerlist", { 175, 150, 255 }, true, true, true);
 
 							CloseCurrentPopup();
 						}
@@ -2390,11 +2514,11 @@ void CMenu::MenuLogs(int iTab)
 							F::Configs.m_sCorePath + std::format("Backup{}.json", iBackupCount + 1),
 							std::filesystem::copy_options::overwrite_existing
 						);
-						SDK::Output("Amalgam", "Saved backup playerlist", { 175, 150, 255 }, true, true, true);
+						SDK::Output("Arylcyclohexylamine", "Saved backup playerlist", { 175, 150, 255 }, true, true, true);
 					}
 					catch (...)
 					{
-						SDK::Output("Amalgam", "Failed to backup playerlist", { 175, 150, 255, 127 }, true, true, true);
+						SDK::Output("Arylcyclohexylamine", "Failed to backup playerlist", { 175, 150, 255, 127 }, true, true, true);
 					}
 				}
 			}
@@ -3325,6 +3449,7 @@ void CMenu::MenuSettings(int iTab)
 			FToggle(Vars::Debug::VisualizeTraces, FToggleEnum::Left);
 			FToggle(Vars::Debug::VisualizeTraceHits, FToggleEnum::Right);
 #endif
+			FToggle(Vars::Config::LoadDebugSettings, FToggleEnum::Left); FTooltip("Load/Save debug settings in this config");
 		} EndSection();
 		if (Section("Extra"))
 		{
@@ -3925,7 +4050,7 @@ void CMenu::DrawBinds()
 	float flHeight = H::Draw.Scale(18 * vInfo.size() + (Vars::Menu::BindWindowTitle.Value ? 42 : 12));
 	SetNextWindowSize({ flWidth, flHeight });
 	PushStyleVar(ImGuiStyleVar_WindowMinSize, { H::Draw.Scale(40), H::Draw.Scale(40) });
-	if (Begin("Binds", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing))
+	if (Begin("Binds", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground)) 
 	{
 		ImVec2 vWindowPos = GetWindowPos();
 
@@ -3941,11 +4066,39 @@ void CMenu::DrawBinds()
 		int iListStart = 8;
 		if (Vars::Menu::BindWindowTitle.Value)
 		{
-			SetCursorPos({ H::Draw.Scale(8), H::Draw.Scale(6) });
+			ImVec2 vSize = GetWindowSize();
+			ImVec2 vDrawPos = GetDrawPos();
+			ImDrawList* pDrawList = GetWindowDrawList();
+
+			ImColor headerBgColor = F::Render.Background0p5.Value;
+			headerBgColor.Value.x *= 0.9f; // r
+			headerBgColor.Value.y *= 0.9f; // g
+			headerBgColor.Value.z *= 0.9f; // b
+
+			pDrawList->AddRectFilled(
+				{ vDrawPos.x, vDrawPos.y },
+				{ vDrawPos.x + vSize.x, vDrawPos.y + H::Draw.Scale(28) },
+				headerBgColor,
+				H::Draw.Scale(3),
+				ImDrawFlags_RoundCornersTop
+			);
+
+			SetCursorPos({ H::Draw.Scale(4), H::Draw.Scale(6) });
 			IconImage(ICON_MD_KEYBOARD);
 			PushFont(F::Render.FontLarge);
-			SetCursorPos({ H::Draw.Scale(30), H::Draw.Scale(7) });
-			FText("Binds");
+
+			SetCursorPos({ H::Draw.Scale(8), H::Draw.Scale(7) });
+			PushStyleColor(ImGuiCol_Text, F::Render.Active.Value);
+			FText("Key");
+			int keyWidth = 0, keyHeight = 0;
+			ImVec2 textSize = ImGui::CalcTextSize("Key");
+			keyWidth = textSize.x;
+			keyHeight = textSize.y;
+			SetCursorPos({ H::Draw.Scale(8) + keyWidth, H::Draw.Scale(7) });
+			PushStyleColor(ImGuiCol_Text, F::Render.Accent.Value);
+			FText("binds");
+			PopStyleColor(2);
+
 			PopFont();
 
 			iListStart = 36;
@@ -4073,6 +4226,7 @@ void CMenu::Render()
 		AddDraggable("Ping", Vars::Menu::PingDisplay, FGet(Vars::Menu::Indicators) & Vars::Menu::IndicatorsEnum::Ping);
 		AddDraggable("Conditions", Vars::Menu::ConditionsDisplay, FGet(Vars::Menu::Indicators) & Vars::Menu::IndicatorsEnum::Conditions);
 		AddDraggable("Seed prediction", Vars::Menu::SeedPredictionDisplay, FGet(Vars::Menu::Indicators) & Vars::Menu::IndicatorsEnum::SeedPrediction);
+
 		AddResizableDraggable("Camera", Vars::Visuals::Simulation::ProjectileWindow, FGet(Vars::Visuals::Simulation::ProjectileCamera));
 		AddResizableDraggable("Radar", Vars::Radar::Main::Window, FGet(Vars::Radar::Main::Enabled), { H::Draw.Scale(100), H::Draw.Scale(100) }, { H::Draw.Scale(1000), H::Draw.Scale(1000) }, SquareConstraints);
 
