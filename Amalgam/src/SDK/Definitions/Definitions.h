@@ -31,9 +31,14 @@
 #define VEC_OBS_HULL_MAX_SCALED(player) (pGameRules->GetViewVectors()->m_vObsHullMax * player->m_flModelScale())
 #define VEC_DEAD_VIEWHEIGHT_SCALED(player) (pGameRules->GetViewVectors()->m_vDeadViewHeight * player->m_flModelScale())
 
-#define WATERJUMP_HEIGHT			8
+#define WATERJUMP_HEIGHT 8
 
-#define MAX_CLIMB_SPEED		200
+#define MAX_CLIMB_SPEED 200
+
+#define TF_MAX_SPEED (400.0f * 1.3f)
+#define	STOP_EPSILON 0.1f
+#define MAX_PLAYERS 101
+#define	MAX_CLIP_PLANES 5
 
 #if defined(TF_DLL) || defined(TF_CLIENT_DLL)
 #define TIME_TO_DUCK		0.2
@@ -44,6 +49,12 @@
 #endif 
 #define TIME_TO_UNDUCK 0.2f
 #define TIME_TO_UNDUCK_MS 200.0f
+
+#define GAMEMOVEMENT_DUCK_TIME 1000.0f
+#define GAMEMOVEMENT_JUMP_TIME 510.0f
+#define GAMEMOVEMENT_JUMP_HEIGHT 21.0f
+#define GAMEMOVEMENT_TIME_TO_UNDUCK ( TIME_TO_UNDUCK * 1000.0f )
+#define GAMEMOVEMENT_TIME_TO_UNDUCK_INV ( GAMEMOVEMENT_DUCK_TIME - GAMEMOVEMENT_TIME_TO_UNDUCK )
 
 #define MAX_WEAPON_SLOTS 6
 #define MAX_WEAPON_POSITIONS 20
@@ -319,8 +330,6 @@
 #define RD_MAX_ROBOT_GROUPS_PER_TEAM 6
 #define MAX_RAIDMODE_UPGRADES 60
 
-#define MAX_PLAYERS 101
-
 #define STEAM_PARM "-steam"
 #define AUTO_RESTART "-autoupdate"
 #define INVALID_STEAM_TICKET "Invalid STEAM UserID Ticket\n"
@@ -458,7 +467,6 @@
 								  (v.y>=MIN_COORD_INTEGER*2) && (v.y<=MAX_COORD_INTEGER*2) && \
 								  (v.z>=MIN_COORD_INTEGER*2) && (v.z<=MAX_COORD_INTEGER*2) ); \
 
-
 enum MoveType_t
 {
 	MOVETYPE_NONE = 0,
@@ -469,7 +477,7 @@ enum MoveType_t
 	MOVETYPE_FLYGRAVITY,
 	MOVETYPE_VPHYSICS,
 	MOVETYPE_PUSH,
-	MOVETYPE_NOCLIP,
+	MOVETYPE_NOCLIP, 
 	MOVETYPE_LADDER,
 	MOVETYPE_OBSERVER,
 	MOVETYPE_CUSTOM,
@@ -2400,6 +2408,51 @@ enum ETFCond
 	TF_COND_POWERUPMODE_DOMINANT
 };
 
+enum ETFConds
+{
+	TFCond_Slowed = (1 << 0), // 0
+	TFCond_Zoomed = (1 << 1), // 1
+	TFCond_Disguised = (1 << 3), // 3
+	TFCond_Stealthed = (1 << 4), // 4
+	TFCond_Ubercharged = (1 << 5), // 5
+	TFCond_Taunting = (1 << 7), // 7
+	TFCond_Bonked = (1 << 14), // 14
+	TFCond_Stunned = (1 << 15), // 15
+	TFCond_Charging = (1 << 17), // 17
+	TFCond_OnFire = (1 << 22), // 22
+	TFCond_Jarated = (1 << 24), // 24
+	TFCond_Bleeding = (1 << 25), // 25
+	TFCond_Milked = (1 << 27), // 27
+	TFCond_MegaHeal = (1 << 28), // 28
+
+	TFCondEx_PyroCrits = (1 << 12), // 44
+	TFCondEx_BulletCharge = (1 << 26), // 58
+	TFCondEx_ExplosiveCharge = (1 << 27), // 59
+	TFCondEx_FireCharge = (1 << 28), // 60
+
+	TFCondEx2_BulletImmune = (1 << 3), // 67
+	TFCondEx2_BlastImmune = (1 << 4), // 68
+	TFCondEx2_FireImmune = (1 << 5), // 69
+	TFCondEx2_HalloweenGhostMode = (1 << 13), // 77
+	TFCondEx2_InKart = (1 << 18), // 82
+	TFCondEx2_StrengthRune = (1 << 26), // 90
+	TFCondEx2_HasteRune = (1 << 27), // 91
+	TFCondEx2_RegenRune = (1 << 28), // 92
+	TFCondEx2_ResistRune = (1 << 29), // 93
+	TFCondEx2_VampireRune = (1 << 30), // 94
+	TFCondEx2_ReflectRune = (1 << 31), // 95
+
+	TFCondEx3_PrecisionRune = (1 << 0), // 96
+	TFCondEx3_AgilityRune = (1 << 1), // 97
+	TFCondEx3_KnockoutRune = (1 << 7), // 103
+	TFCondEx3_ImbalanceRune = (1 << 8), // 104
+	TFCondEx3_CritboostedTempRune = (1 << 9), // 105
+	TFCondEx3_KingRune = (1 << 13), // 109
+	TFCondEx3_PlagueRune = (1 << 14), // 110
+	TFCondEx3_SupernovaRune = (1 << 15), // 111
+	TFCondEx3_KingBuff = (1 << 17), // 113
+};
+
 enum ETFDmgCustom
 {
 	TF_DMG_CUSTOM_NONE = 0,
@@ -2908,6 +2961,34 @@ enum
 	WL_Feet,
 	WL_Waist,
 	WL_Eyes
+};
+
+enum
+{
+	PC_EVERYTHING = 0,
+	PC_NON_NETWORKED_ONLY,
+	PC_NETWORKED_ONLY,
+};
+
+enum
+{
+	MAX_PC_CACHE_SLOTS = 3
+};
+
+enum MapLoadType_t
+{
+	MapLoad_NewGame = 0,
+	MapLoad_LoadGame,
+	MapLoad_Transition,
+	MapLoad_Background,
+};
+
+enum KeyValuesPreloadType_t
+{
+	TYPE_VMT,
+	TYPE_SOUNDEMITTER,
+	TYPE_SOUNDSCAPE,
+	NUM_PRELOAD_TYPES
 };
 
 class CAudioSource;
