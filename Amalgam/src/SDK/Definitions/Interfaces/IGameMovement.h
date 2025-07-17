@@ -1,4 +1,5 @@
 #pragma once
+
 #include "IMoveHelper.h"
 
 class CMoveData
@@ -29,6 +30,16 @@ public:
 	float m_flConstraintWidth;
 	float m_flConstraintSpeedFactor;
 	Vector m_vecAbsOrigin;
+
+	inline const Vector& GetAbsOrigin()
+	{
+		return m_vecAbsOrigin;
+	}
+
+	inline void SetAbsOrigin(const Vector& vec)
+	{
+		m_vecAbsOrigin = vec;
+	}
 };
 
 class CBasePlayer;
