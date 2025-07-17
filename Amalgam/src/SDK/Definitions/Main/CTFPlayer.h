@@ -2,7 +2,7 @@
 #include "CBasePlayer.h"
 #include "CMultiPlayerAnimState.h"
 
-MAKE_SIGNATURE(CTFPlayer_IsPlayerOnSteamFriendsList, "client.dll", "40 57 48 81 EC ? ? ? ? 48 8B FA E8", 0x0);
+MAKE_SIGNATURE(CTFPlayer_IsPlayerOnSteamFriendsList, "client.dll", "40 57 48 81 EC ? ? ? ? 48 8B FA E8", 0x0); // E8 ? ? ? ? 84 C0 74 42 48 8B C6
 MAKE_SIGNATURE(TeamFortress_CalculateMaxSpeed, "client.dll", "88 54 24 ? 53 55", 0x0);
 MAKE_SIGNATURE(CTFPlayer_UpdateClientSideAnimation, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B F8 48 85 C0 74 ? 48 8B 00 48 8B CF FF 90 ? ? ? ? 84 C0 75 ? 33 FF 48 3B DF", 0x0);
 MAKE_SIGNATURE(CTFPlayer_UpdateWearables, "client.dll", "40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B 03 48 8B CB FF 90 ? ? ? ? 4C 8D 0D ? ? ? ? C7 44 24 ? ? ? ? ? 48 8B C8 4C 8D 05 ? ? ? ? 33 D2 E8 ? ? ? ? 48 85 C0", 0x0);
@@ -117,7 +117,7 @@ public:
 	NETVAR(m_nHalloweenBombHeadStage, int, "CTFPlayer", "m_nHalloweenBombHeadStage");
 	NETVAR(m_nPlayerCondEx2, int, "CTFPlayer", "m_nPlayerCondEx2");
 	NETVAR(m_nPlayerCondEx3, int, "CTFPlayer", "m_nPlayerCondEx3");
-	NETVAR(m_nStreaks, void*, "CTFPlayer", "m_nStreaks");
+	//NETVAR(m_nStreaks, void*, "CTFPlayer", "m_nStreaks");
 	NETVAR(m_unTauntSourceItemID_Low, int, "CTFPlayer", "m_unTauntSourceItemID_Low");
 	NETVAR(m_unTauntSourceItemID_High, int, "CTFPlayer", "m_unTauntSourceItemID_High");
 	NETVAR(m_flRuneCharge, float, "CTFPlayer", "m_flRuneCharge");
@@ -178,11 +178,7 @@ public:
 	NETVAR(m_iCampaignMedals, int, "CTFPlayer", "m_iCampaignMedals");
 	NETVAR(m_iPlayerSkinOverride, int, "CTFPlayer", "m_iPlayerSkinOverride");
 	NETVAR(m_bViewingCYOAPDA, bool, "CTFPlayer", "m_bViewingCYOAPDA");
-	inline void* m_Shared()
-	{
-		static int nOffset = U::NetVars.GetNetVar("CTFPlayer", "m_Shared");
-		return reinterpret_cast<void*>(uintptr_t(this) + nOffset);
-	};
+	NETVAR(m_bRegenerating, bool, "CTFPlayer", "m_bRegenerating");
 
 	NETVAR_OFF(m_flInvisibility, float, "CTFPlayer", "m_flInvisChangeCompleteTime", -8);
 	NETVAR_OFF(m_flPrevInvisibility, float, "CTFPlayer", "m_flInvisChangeCompleteTime", -4);
@@ -202,12 +198,217 @@ public:
 	SIGNATURE(UpdateClientSideAnimation, void, CTFPlayer, this);
 	SIGNATURE(UpdateWearables, void, CTFPlayer, this);
 
+	CONDGET(IsSlowed, m_nPlayerCond(), TFCond_Slowed);
+	CONDGET(IsScoped, m_nPlayerCond(), TFCond_Zoomed);
+	CONDGET(IsDisguised, m_nPlayerCond(), TFCond_Disguised);
+	CONDGET(IsCloaked, m_nPlayerCond(), TFCond_Stealthed);
+	CONDGET(IsUberedCond, m_nPlayerCond(), TFCond_Ubercharged);
+	//CONDGET(IsTaunting, m_nPlayerCond(), TFCond_Taunting);
+	CONDGET(IsBonked, m_nPlayerCond(), TFCond_Bonked);
+	CONDGET(IsStunned, m_nPlayerCond(), TFCond_Stunned);
+	CONDGET(IsCharging, m_nPlayerCond(), TFCond_Charging);
+	CONDGET(IsOnFire, m_nPlayerCond(), TFCond_OnFire);
+	CONDGET(IsInJarate, m_nPlayerCond(), TFCond_Jarated);
+	CONDGET(IsBleeding, m_nPlayerCond(), TFCond_Bleeding);
+	CONDGET(IsInMilk, m_nPlayerCond(), TFCond_Milked);
+	CONDGET(IsMegaHealed, m_nPlayerCond(), TFCond_MegaHeal);
+	CONDGET(IsPhlogUbered, m_nPlayerCondEx(), TFCondEx_PyroCrits);
+	CONDGET(IsBulletResist, m_nPlayerCondEx(), TFCondEx_BulletCharge);
+	CONDGET(IsBlastResist, m_nPlayerCondEx(), TFCondEx_ExplosiveCharge);
+	CONDGET(IsFireResist, m_nPlayerCondEx(), TFCondEx_FireCharge);
+	CONDGET(IsBulletImmune, m_nPlayerCondEx2(), TFCondEx2_BulletImmune);
+	CONDGET(IsBlastImmune, m_nPlayerCondEx2(), TFCondEx2_BlastImmune);
+	CONDGET(IsFireImmune, m_nPlayerCondEx2(), TFCondEx2_FireImmune);
+	//CONDGET(IsAGhost, m_nPlayerCondEx2(), TFCondEx2_HalloweenGhostMode);
+	CONDGET(IsInBumperKart, m_nPlayerCondEx2(), TFCondEx2_InKart);
+	CONDGET(IsStrengthRune, m_nPlayerCondEx2(), TFCondEx2_StrengthRune);
+	CONDGET(IsHasteRune, m_nPlayerCondEx2(), TFCondEx2_HasteRune);
+	CONDGET(IsRegenRune, m_nPlayerCondEx2(), TFCondEx2_RegenRune);
+	CONDGET(IsResistRune, m_nPlayerCondEx2(), TFCondEx2_ResistRune);
+	CONDGET(IsVampireRune, m_nPlayerCondEx2(), TFCondEx2_VampireRune);
+	CONDGET(IsReflectRune, m_nPlayerCondEx2(), TFCondEx2_ReflectRune);
+	CONDGET(IsPrecisionRune, m_nPlayerCondEx3(), TFCondEx3_PrecisionRune);
+	CONDGET(IsAgilityRune, m_nPlayerCondEx3(), TFCondEx3_AgilityRune);
+	CONDGET(IsKnockoutRune, m_nPlayerCondEx3(), TFCondEx3_KnockoutRune);
+	CONDGET(IsImbalanceRune, m_nPlayerCondEx3(), TFCondEx3_ImbalanceRune);
+	CONDGET(IsCritTempRune, m_nPlayerCondEx3(), TFCondEx3_CritboostedTempRune);
+	CONDGET(IsKingRune, m_nPlayerCondEx3(), TFCondEx3_KingRune);
+	CONDGET(IsPlagueRune, m_nPlayerCondEx3(), TFCondEx3_PlagueRune);
+	CONDGET(IsSupernovaRune, m_nPlayerCondEx3(), TFCondEx3_SupernovaRune);
+	CONDGET(IsBuffedByKing, m_nPlayerCondEx3(), TFCondEx3_KingBuff);
+
+	inline void* m_Shared()
+	{
+		static int nOffset = U::NetVars.GetNetVar("CTFPlayer", "m_Shared");
+		return reinterpret_cast<void*>(uintptr_t(this) + nOffset);
+	}
+
+	inline int& m_nStreaks(int index)
+	{
+		static int nOffset = U::NetVars.GetNetVar("CTFPlayer", "m_nStreaks");
+		return (&(*reinterpret_cast<int*>(uintptr_t(this) + nOffset)))[index];
+	}
+
+	inline float HealthFraction()
+	{
+		if (GetMaxHealth() == 0)
+			return 1.0f;
+
+		return std::clamp(static_cast<float>(m_iHealth()) / static_cast<float>(GetMaxHealth()), 0.0f, 1.0f);
+	}
+
+	inline std::string GetName()
+	{
+		PlayerInfo_t info{};
+
+		if (I::EngineClient->GetPlayerInfo(entindex(), &info))
+			return "";
+
+		return info.name;
+	}
+
+	inline CTFWeaponBase* GetWeaponFromSlot(int nSlot)
+	{
+		static int nOffset = U::NetVars.GetNetVar("CBaseCombatCharacter", "m_hMyWeapons");
+		int hWeapon = *reinterpret_cast<int*>(reinterpret_cast<std::uintptr_t>(this) + nOffset + nSlot * 4);
+		return I::ClientEntityList->GetClientEntityFromHandle(hWeapon)->As<CTFWeaponBase>();
+	}
+
+	inline std::pair<Vec3, Vec3> GetBoundingBox()
+	{
+		static int minOffset = U::NetVars.GetNetVar("CBasePlayer", "m_vecMins");
+		static int maxOffset = U::NetVars.GetNetVar("CBasePlayer", "m_vecMaxs");
+
+		Vec3 origin = GetAbsOrigin();
+		return std::make_pair(origin + minOffset, origin + maxOffset);
+	}
+
+	inline void UpdateButtonState(const int nUserCmdButtonMask)
+	{
+		m_afButtonLast() = m_nButtons();
+		m_nButtons() = nUserCmdButtonMask;
+
+		const int buttonsChanged = m_afButtonLast() ^ m_nButtons();
+
+		m_afButtonPressed() = buttonsChanged & m_nButtons();
+		m_afButtonReleased() = buttonsChanged & (~m_nButtons());
+	}
+
+	inline bool ConstructBones(CTFPlayer* pEntity, matrix3x4* pBones, int mask)
+	{
+		if (!pEntity)
+			return false;
+
+		Vec3 m_vecUninterpolatedOrigin = pEntity->m_vecOrigin();
+		Vec3 m_vecInterpolatedOrigin = pEntity->GetAbsOrigin();
+		Vec3 m_vecAbsAngles = pEntity->GetAbsAngles();
+		Vec3 m_vecNetworkedAngles = pEntity->GetEyeAngles();
+
+		static ConVar* anim_showstate = I::CVar->FindVar("anim_showstate");
+		anim_showstate->SetValue(pEntity->entindex());
+
+		G::ConstructingBones = true;
+
+		pEntity->SetAbsAngles(m_vecNetworkedAngles);
+		pEntity->SetAbsOrigin(m_vecUninterpolatedOrigin);
+		//pEntity->m_fFlags() = (EFL_DIRTY_ABSTRANSFORM, EFL_DIRTY_ABSVELOCITY);
+		//pEntity->CalcAbsolutePosition();
+
+		if (!pEntity->SetupBones(pBones, 128, mask, I::GlobalVars->curtime))
+			return false;
+
+		pEntity->SetAbsOrigin(m_vecInterpolatedOrigin);
+		pEntity->SetAbsAngles(m_vecAbsAngles);
+
+		G::ConstructingBones = false;
+
+		return true;
+	}
+
+	inline Vec3 GetHitboxOrigin(int hitbox)
+	{
+		matrix3x4 boneMatrix[128];
+
+		const model_t* model;
+		studiohdr_t* hdr;
+
+		mstudiohitboxset_t* set;
+		mstudiobbox_t* hitboxMat;
+
+		Vec3 min, max;
+
+		try
+		{
+			if (!SetupBones(boneMatrix, 128, BONE_USED_BY_HITBOX, I::GlobalVars->curtime))
+			{
+				SDK::Output("GetHitboxOrigin->SetupBones invalid", "\n", { 133, 0, 255, 255 });
+				return Vec3{};
+			}
+
+			if ((model = GetModel()) == nullptr)
+			{
+				SDK::Output("GetHitboxOrigin->GetModel invalid", "\n", { 133, 0, 255, 255 });
+				return Vec3{};
+			}
+
+			if ((hdr = I::ModelInfoClient->GetStudiomodel(model)) == nullptr)
+			{
+				SDK::Output("GetHitboxOrigin->GetStudioModel invalid", "\n", { 133, 0, 255, 255 });
+				return Vec3{};
+			}
+
+			if ((set = hdr->pHitboxSet(0)) == nullptr)
+			{
+				SDK::Output("GetHitboxOrigin->GetHitboxSet invalid", "\n", { 133, 0, 255, 255 });
+				return Vec3{};
+			}
+
+			if ((hitboxMat = set->pHitbox(hitbox)) == nullptr)
+			{
+				SDK::Output("GetHitboxOrigin->GetHitbox invalid", "\n", { 133, 0, 255, 255 });
+				return Vec3{};
+			}
+		}
+		catch (...)
+		{
+			SDK::Output("GetHitboxOrigin->Unknown error", "\n", { 133, 0, 255, 255 });
+			return Vec3{};
+		}
+
+		Math::VectorTransform(hitboxMat->bbmin, boneMatrix[hitboxMat->bone], min);
+		Math::VectorTransform(hitboxMat->bbmax, boneMatrix[hitboxMat->bone], max);
+
+		return ((min + max) * 0.5f);
+	}
+
+	inline Vec3 GetBoneOrigin(int bone)
+	{
+		matrix3x4 boneMatrix[128];
+
+		try
+		{
+			if (SetupBones(boneMatrix, 128, BONE_USED_BY_HITBOX, I::GlobalVars->curtime))
+				return Vec3(boneMatrix[bone][0][3], boneMatrix[bone][1][3], boneMatrix[bone][2][3]);
+		}
+		catch (...)
+		{
+			SDK::Output("GetBoneOrigin->Unknown error", "\n", { 133, 0, 255, 255 });
+			return Vec3{};
+		}
+
+		return Vec3{};
+	}
+
 	Vec3 GetEyeAngles();
+	Vec3 GetEyePosition();
 	Vec3 GetViewOffset(); // use on nonlocal players
 	bool InCond(const ETFCond cond);
+	bool IsZoomed();
+	bool IsStealthed();
 	bool IsAGhost();
 	bool IsTaunting();
 	bool IsInvisible();
+	float GetInvisiblePercentage();
 	bool IsInvulnerable();
 	bool IsUbered();
 	bool IsCritBoosted();
