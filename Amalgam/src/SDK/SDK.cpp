@@ -336,10 +336,10 @@ bool SDK::VisPos(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFr
 		return trace.m_pEnt && trace.m_pEnt == pEntity;
 	return true;
 }
-bool SDK::VisPosProjectile(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask)
+bool SDK::VisPosCollideable(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask)
 {
 	CGameTrace trace = {};
-	CTraceFilterProjectile filter = {}; filter.pSkip = pSkip;
+	CTraceFilterCollideable filter = {}; filter.pSkip = pSkip; filter.iType = SKIP_CHECK;
 	Trace(vFrom, vTo, nMask, &filter, &trace);
 	if (trace.DidHit())
 		return trace.m_pEnt && trace.m_pEnt == pEntity;
@@ -353,6 +353,40 @@ bool SDK::VisPosWorld(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3
 	if (trace.DidHit())
 		return trace.m_pEnt && trace.m_pEnt == pEntity;
 	return true;
+}
+
+Vec3 SDK::PredictOrigin(Vec3& vOrigin, Vec3 vVelocity, float flLatency, bool bTrace, Vec3 vMins, Vec3 vMaxs, unsigned int nMask, float flNormal)
+{
+	if (vVelocity.IsZero() || !flLatency)
+		return vOrigin;
+
+	Vec3 vOut = vOrigin + vVelocity * flLatency;
+	if (!bTrace)
+		return vOut;
+
+	CGameTrace trace = {};
+	CTraceFilterWorldAndPropsOnly filter = {};
+
+	SDK::TraceHull(vOrigin, vOut, vMins, vMaxs, nMask, &filter, &trace);
+	return trace.endpos + (flNormal ? trace.plane.normal * flNormal : Vec3());
+}
+
+bool SDK::PredictOrigin(Vec3& vOut, Vec3& vOrigin, Vec3 vVelocity, float flLatency, bool bTrace, Vec3 vMins, Vec3 vMaxs, unsigned int nMask, float flNormal)
+{
+	vOut = vOrigin;
+	if (vVelocity.IsZero() || !flLatency)
+		return true;
+
+	vOut = vOrigin + vVelocity * flLatency;
+	if (!bTrace)
+		return true;
+
+	CGameTrace trace = {};
+	CTraceFilterWorldAndPropsOnly filter = {};
+
+	SDK::TraceHull(vOrigin, vOut, vMins, vMaxs, nMask, &filter, &trace);
+	vOut = trace.endpos + (flNormal ? trace.plane.normal * flNormal : Vec3());
+	return !trace.DidHit();
 }
 
 int SDK::GetRoundState()
@@ -439,22 +473,19 @@ EWeaponType SDK::GetWeaponType(CTFWeaponBase* pWeapon, EWeaponType* pSecondaryTy
 	return EWeaponType::HITSCAN;
 }
 
-const char* SDK::GetClassByIndex(const int nClass)
+const char* SDK::GetClassByIndex(const int nClass, bool bLower)
 {
-	static const char* szClasses[] = {
-		"unknown",
-		"scout",
-		"sniper",
-		"soldier",
-		"demoman",
-		"medic",
-		"heavy",
-		"pyro",
-		"spy",
-		"engineer"
+	static const char* szClassesUpper[] = {
+		"Unknown", "Scout", "Sniper", "Soldier", "Demoman", "Medic", "Heavy", "Pyro", "Spy", "Engineer"
+	};
+	static const char* szClassesLower[] = {
+		"unknown", "scout", "sniper", "soldier", "demoman", "medic", "heavy", "pyro", "spy", "engineer"
 	};
 
-	return (nClass < 10 && nClass > 0) ? szClasses[nClass] : szClasses[0];
+	if (!bLower)
+		return nClass < 10 && nClass > 0 ? szClassesUpper[nClass] : szClassesUpper[0];
+	else
+		return nClass < 10 && nClass > 0 ? szClassesLower[nClass] : szClassesLower[0];
 }
 
 int SDK::IsAttacking(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, const CUserCmd* pCmd, bool bTickBase)
@@ -582,7 +613,17 @@ int SDK::IsAttacking(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, const CUserCmd* 
 			return 1;
 		return false;
 	case TF_WEAPON_FLAMETHROWER:
+		if (!SDK::AttribHookValue(0, "set_charged_airblast", pWeapon)
+			? G::CanSecondaryAttack && pCmd->buttons & IN_ATTACK2
+			: G::CanSecondaryAttack && G::LastUserCmd && G::LastUserCmd->buttons & IN_ATTACK2 && !(pCmd->buttons & IN_ATTACK2))
+			return 1;
+		break;
 	case TF_WEAPON_FLAME_BALL:
+		if (SDK::AttribHookValue(0, "set_charged_airblast", pWeapon))
+			return false;
+		else if (G::CanSecondaryAttack && pCmd->buttons & IN_ATTACK2)
+			return 1;
+		break;
 	case TF_WEAPON_MECHANICAL_ARM:
 		if (G::CanSecondaryAttack && pCmd->buttons & IN_ATTACK2)
 			return 1;
@@ -640,7 +681,7 @@ void SDK::FixMovement(CUserCmd* pCmd, const Vec3& vCurAngle, const Vec3& vTarget
 
 	Vec3 vMove = { pCmd->forwardmove, pCmd->sidemove * (bCurOOB ? -1 : 1), pCmd->upmove};
 	float flSpeed = vMove.Length2D();
-	Vec3 vMoveAng; Math::VectorAngles(vMove, vMoveAng);
+	Vec3 vMoveAng = Math::VectorAngles(vMove);
 
 	float flCurYaw = vCurAngle.y + (bCurOOB ? 180.f : 0.f);
 	float flTargetYaw = vTargetAngle.y + (bTargetOOB ? 180.f : 0.f);
@@ -689,7 +730,7 @@ Vec3 SDK::ComputeMove(const CUserCmd* pCmd, CTFPlayer* pLocal, Vec3& vFrom, Vec3
 		return {};
 
 	Vec3 vSilent = { vDiff.x, vDiff.y, 0 };
-	Vec3 vAngle; Math::VectorAngles(vSilent, vAngle);
+	Vec3 vAngle = Math::VectorAngles(vSilent);
 	const float flYaw = DEG2RAD(vAngle.y - pCmd->viewangles.y);
 	const float flPitch = DEG2RAD(vAngle.x - pCmd->viewangles.x);
 
@@ -717,46 +758,6 @@ void SDK::WalkTo(CUserCmd* pCmd, CTFPlayer* pLocal, Vec3& vTo, float flScale)
 
 
 
-class CTraceFilterSetup : public ITraceFilter // trace filter solely for GetProjectileFireSetup
-{
-public:
-	bool ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask) override;
-	TraceType_t GetTraceType() const override;
-	CBaseEntity* pSkip = nullptr;
-};
-bool CTraceFilterSetup::ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask)
-{
-	if (!pServerEntity || pServerEntity == pSkip)
-		return false;
-
-	auto pEntity = reinterpret_cast<CBaseEntity*>(pServerEntity);
-
-	switch (pEntity->GetClassID())
-	{
-	case ETFClassID::CTFAmmoPack:
-	case ETFClassID::CFuncAreaPortalWindow:
-	case ETFClassID::CFuncRespawnRoomVisualizer:
-	case ETFClassID::CTFReviveMarker: return false;
-	case ETFClassID::CTFMedigunShield:
-	case ETFClassID::CObjectSentrygun:
-	case ETFClassID::CObjectDispenser:
-	case ETFClassID::CObjectTeleporter: return true;
-	case ETFClassID::CTFPlayer:
-	{
-		auto pLocal = H::Entities.GetLocal();
-
-		const int iTargetTeam = pEntity->m_iTeamNum(), iLocalTeam = pLocal ? pLocal->m_iTeamNum() : iTargetTeam;
-		return iTargetTeam != iLocalTeam;
-	}
-	}
-
-	return true;
-}
-TraceType_t CTraceFilterSetup::GetTraceType() const
-{
-	return TRACE_EVERYTHING;
-}
-
 void SDK::GetProjectileFireSetup(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vOffset, Vec3& vPosOut, Vec3& vAngOut, bool bPipes, bool bInterp, bool bAllowFlip)
 {
 	static auto cl_flipviewmodels = U::ConVars.FindVar("cl_flipviewmodels");
@@ -775,25 +776,11 @@ void SDK::GetProjectileFireSetup(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vO
 		Vec3 vEndPos = vShootPos + vForward * 2000.f;
 
 		CGameTrace trace = {};
-		CTraceFilterSetup filter = {};
+		CTraceFilterCollideable filter = {}; filter.pSkip = pPlayer; filter.iType = SKIP_CHECK;
 		Trace(vShootPos, vEndPos, MASK_SOLID, &filter, &trace);
 		if (trace.DidHit() && trace.fraction > 0.1f)
 			vEndPos = trace.endpos;
 
-		Math::VectorAngles(vEndPos - vPosOut, vAngOut);
+		vAngOut = Math::VectorAngles(vEndPos - vPosOut);
 	}
-}
-
-void SDK::GetProjectileFireSetupAirblast(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vPosIn, Vec3& vAngOut, bool bInterp)
-{
-	const Vec3 vShootPos = bInterp ? pPlayer->GetEyePosition() : pPlayer->GetShootPos();
-
-	Vec3 vForward; Math::AngleVectors(vAngIn, &vForward);
-
-	Vec3 vEndPos = vShootPos + (vForward * MAX_TRACE_LENGTH);
-	CGameTrace trace = {};
-	CTraceFilterWorldAndPropsOnly filter = {};
-	Trace(vShootPos, vEndPos, MASK_SOLID, &filter, &trace);
-
-	Math::VectorAngles(trace.endpos - vPosIn, vAngOut);
 }

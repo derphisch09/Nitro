@@ -194,7 +194,7 @@ int CAimbotHitscan::GetHitboxPriority(int nHitbox, CTFPlayer* pLocal, CTFWeaponB
 				{
 					float flDistTo = pTarget->m_vecOrigin().DistTo(pLocal->m_vecOrigin());
 
-					float flMult = SDK::AttribHookValue(1.f, "mult_dmg", pWeapon);
+					float flMult = SDK::AttribHookValue(1, "mult_dmg", pWeapon);
 					int iDamage = std::ceil(Math::RemapVal(flDistTo, 90.f, 900.f, 60.f, 21.f) * flMult);
 					if (pPlayer->m_iHealth() <= iDamage)
 						bHeadshot = false;
@@ -299,7 +299,7 @@ int CAimbotHitscan::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBase* 
 
 	float flSpread = pWeapon->GetWeaponSpread();
 	if (flSpread && Vars::Aimbot::General::HitscanPeek.Value)
-		vPeekPos = pLocal->GetShootPos() + pLocal->m_vecVelocity() * TICKS_TO_TIME(-Vars::Aimbot::General::HitscanPeek.Value);
+		vPeekPos = vEyePos + pLocal->m_vecVelocity() * TICKS_TO_TIME(-Vars::Aimbot::General::HitscanPeek.Value);
 
 	// if we're doubletapping, we can't change viewangles so work around that
 	static int iTargetBone = 0;
@@ -665,19 +665,21 @@ bool CAimbotHitscan::Aim(Vec3 vCurAngle, Vec3 vToAngle, Vec3& vOut, int iMethod)
 }
 
 // assume angle calculated outside with other overload
-void CAimbotHitscan::Aim(CUserCmd* pCmd, Vec3& vAngle)
+void CAimbotHitscan::Aim(CUserCmd* pCmd, Vec3& vAngle, int iMethod)
 {
-	switch (Vars::Aimbot::General::AimType.Value)
+	bool bDoubleTap = F::Ticks.m_bDoubletap || F::Ticks.GetTicks(H::Entities.GetWeapon()) || F::Ticks.m_bSpeedhack;
+	switch (iMethod)
 	{
 	case Vars::Aimbot::General::AimTypeEnum::Plain:
+		if (G::Attacking != 1 && !bDoubleTap)
+			break;
+		[[fallthrough]];
 	case Vars::Aimbot::General::AimTypeEnum::Smooth:
 	case Vars::Aimbot::General::AimTypeEnum::Assistive:
 		pCmd->viewangles = vAngle;
 		I::EngineClient->SetViewAngles(vAngle);
 		break;
 	case Vars::Aimbot::General::AimTypeEnum::Silent:
-	{
-		bool bDoubleTap = F::Ticks.m_bDoubletap || F::Ticks.GetTicks(H::Entities.GetWeapon()) || F::Ticks.m_bSpeedhack;
 		if (G::Attacking == 1 || bDoubleTap)
 		{
 			SDK::FixMovement(pCmd, vAngle);
@@ -685,12 +687,41 @@ void CAimbotHitscan::Aim(CUserCmd* pCmd, Vec3& vAngle)
 			G::SilentAngles = true;
 		}
 		break;
-	}
 	case Vars::Aimbot::General::AimTypeEnum::Locking:
-	{
 		SDK::FixMovement(pCmd, vAngle);
 		pCmd->viewangles = vAngle;
 	}
+}
+
+static inline void DrawVisuals(CTFPlayer* pLocal, Target_t& tTarget, int nWeaponID)
+{
+	if (G::Attacking == 1 && nWeaponID != TF_WEAPON_LASER_POINTER)
+	{
+		bool bLine = Vars::Visuals::Line::Enabled.Value;
+		bool bBoxes = Vars::Visuals::Hitbox::BonesEnabled.Value & Vars::Visuals::Hitbox::BonesEnabledEnum::OnShot;
+		if (G::CanPrimaryAttack && (bLine || bBoxes))
+		{
+			G::LineStorage.clear();
+			G::BoxStorage.clear();
+			G::PathStorage.clear();
+
+			if (bLine)
+			{
+				Vec3 vEyePos = pLocal->GetShootPos();
+				float flDist = vEyePos.DistTo(tTarget.m_vPos);
+				Vec3 vForward; Math::AngleVectors(tTarget.m_vAngleTo + pLocal->m_vecPunchAngle(), &vForward);
+
+				if (Vars::Colors::Line.Value.a)
+					G::LineStorage.emplace_back(std::pair<Vec3, Vec3>(vEyePos, vEyePos + vForward * flDist), I::GlobalVars->curtime + Vars::Visuals::Line::DrawDuration.Value, Vars::Colors::Line.Value);
+				if (Vars::Colors::LineClipped.Value.a)
+					G::LineStorage.emplace_back(std::pair<Vec3, Vec3>(vEyePos, vEyePos + vForward * flDist), I::GlobalVars->curtime + Vars::Visuals::Line::DrawDuration.Value, Vars::Colors::LineClipped.Value, true);
+			}
+			if (bBoxes)
+			{
+				auto vBoxes = F::Visuals.GetHitboxes(tTarget.m_pRecord->m_BoneMatrix.m_aBones, tTarget.m_pEntity->As<CBaseAnimating>(), {}, tTarget.m_nAimedHitbox);
+				G::BoxStorage.insert(G::BoxStorage.end(), vBoxes.begin(), vBoxes.end());
+			}
+		}
 	}
 }
 
@@ -735,20 +766,16 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 	case TF_WEAPON_SNIPERRIFLE:
 	case TF_WEAPON_SNIPERRIFLE_DECAP:
 	{
-		const bool bScoped = pLocal->InCond(TF_COND_ZOOMED);
-
+		bool bScoped = pLocal->InCond(TF_COND_ZOOMED);
 		if (Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::AutoScope && !bScoped)
 		{
 			pCmd->buttons |= IN_ATTACK2;
 			return;
 		}
-
-		if (Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::ScopedOnly && !bScoped)
+		else if (Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::ScopedOnly && !bScoped)
 			return;
-
-		if (!bScoped && SDK::AttribHookValue(0, "sniper_only_fire_zoomed", pWeapon))
+		else if (!bScoped && SDK::AttribHookValue(0, "sniper_only_fire_zoomed", pWeapon))
 			return;
-
 		break;
 	}
 	case TF_WEAPON_SNIPERRIFLE_CLASSIC:
@@ -780,9 +807,7 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 		G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount };
 		G::AimPoint = { tTarget.m_vPos, I::GlobalVars->tickcount };
 
-		bool bShouldFire = ShouldFire(pLocal, pWeapon, pCmd, tTarget);
-
-		if (bShouldFire)
+		if (ShouldFire(pLocal, pWeapon, pCmd, tTarget))
 		{
 			switch (nWeaponID)
 			{
@@ -811,7 +836,6 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 		}
 
 		G::Attacking = SDK::IsAttacking(pLocal, pWeapon, pCmd, true);
-
 		if (G::Attacking == 1 && nWeaponID != TF_WEAPON_LASER_POINTER)
 		{
 			if (tTarget.m_pEntity->IsPlayer())
@@ -819,33 +843,8 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 
 			if (tTarget.m_bBacktrack)
 				pCmd->tick_count = TIME_TO_TICKS(tTarget.m_pRecord->m_flSimTime) + TIME_TO_TICKS(F::Backtrack.GetFakeInterp());
-
-			bool bLine = Vars::Visuals::Line::Enabled.Value;
-			bool bBoxes = Vars::Visuals::Hitbox::BonesEnabled.Value & Vars::Visuals::Hitbox::BonesEnabledEnum::OnShot;
-			if (G::CanPrimaryAttack && (bLine || bBoxes))
-			{
-				G::LineStorage.clear();
-				G::BoxStorage.clear();
-				G::PathStorage.clear();
-
-				if (bLine)
-				{
-					Vec3 vEyePos = pLocal->GetShootPos();
-					float flDist = vEyePos.DistTo(tTarget.m_vPos);
-					Vec3 vForward; Math::AngleVectors(tTarget.m_vAngleTo + pLocal->m_vecPunchAngle(), &vForward);
-
-					if (Vars::Colors::Line.Value.a)
-						G::LineStorage.emplace_back(std::pair<Vec3, Vec3>(vEyePos, vEyePos + vForward * flDist), I::GlobalVars->curtime + Vars::Visuals::Line::DrawDuration.Value, Vars::Colors::Line.Value);
-					if (Vars::Colors::LineClipped.Value.a)
-						G::LineStorage.emplace_back(std::pair<Vec3, Vec3>(vEyePos, vEyePos + vForward * flDist), I::GlobalVars->curtime + Vars::Visuals::Line::DrawDuration.Value, Vars::Colors::LineClipped.Value, true);
-				}
-				if (bBoxes)
-				{
-					auto vBoxes = F::Visuals.GetHitboxes(tTarget.m_pRecord->m_BoneMatrix.m_aBones, tTarget.m_pEntity->As<CBaseAnimating>(), {}, tTarget.m_nAimedHitbox);
-					G::BoxStorage.insert(G::BoxStorage.end(), vBoxes.begin(), vBoxes.end());
-				}
-			}
 		}
+		DrawVisuals(pLocal, tTarget, nWeaponID);
 
 		Aim(pCmd, tTarget.m_vAngleTo);
 		if (G::SilentAngles)

@@ -12,7 +12,6 @@ void CBacktrack::Reset()
 
 
 
-// Returns the wish cl_interp
 float CBacktrack::GetLerp()
 {
 	if (Vars::Misc::Game::AntiCheatCompatibility.Value)
@@ -21,13 +20,11 @@ float CBacktrack::GetLerp()
 	return std::clamp(Vars::Backtrack::Interp.Value / 1000.f, G::Lerp, m_flMaxUnlag);
 }
 
-// Returns the wish backtrack latency
 float CBacktrack::GetFake()
 {
 	return std::clamp(Vars::Backtrack::Latency.Value / 1000.f, 0.f, m_flMaxUnlag);
 }
 
-// Returns the current real latency
 float CBacktrack::GetReal(int iFlow, bool bNoFake)
 {
 	auto pNetChan = I::EngineClient->GetNetChannelInfo();
@@ -39,7 +36,6 @@ float CBacktrack::GetReal(int iFlow, bool bNoFake)
 	return pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING) - (bNoFake ? m_flFakeLatency : 0.f);
 }
 
-// Returns the current fake interp
 float CBacktrack::GetFakeInterp()
 {
 	if (Vars::Misc::Game::AntiCheatCompatibility.Value)
@@ -48,7 +44,6 @@ float CBacktrack::GetFakeInterp()
 	return m_flFakeInterp;
 }
 
-// Returns the current anticipated choke
 int CBacktrack::GetAnticipatedChoke(int iMethod)
 {
 	int iAnticipatedChoke = 0;
@@ -85,7 +80,6 @@ void CBacktrack::SendLerp()
 	}
 }
 
-// Manages cl_interp client value
 void CBacktrack::SetLerp(IGameEvent* pEvent)
 {
 	if (I::EngineClient->GetPlayerForUserID(pEvent->GetInt("userid")) == I::EngineClient->GetLocalPlayer())
@@ -200,8 +194,8 @@ void CBacktrack::MakeRecords()
 			|| !H::Entities.GetDeltaTime(pPlayer->entindex()))
 			continue;
 
-		auto pBones = H::Entities.GetBones(pPlayer->entindex());
-		if (!pBones)
+		auto aBones = H::Entities.GetBones(pPlayer->entindex());
+		if (!aBones)
 			continue;
 
 		auto& vRecords = m_mRecords[pPlayer];
@@ -212,7 +206,7 @@ void CBacktrack::MakeRecords()
 			pPlayer->m_vecOrigin(),
 			pPlayer->m_vecMins(),
 			pPlayer->m_vecMaxs(),
-			*reinterpret_cast<BoneMatrix*>(pBones),
+			*reinterpret_cast<BoneMatrix*>(aBones),
 			m_mDidShoot[pPlayer->entindex()],
 			pPlayer->m_vecOrigin()
 		);
@@ -356,6 +350,8 @@ void CBacktrack::AdjustPing(CNetChannel* pNetChan)
 				if (flLatency > flFake || m_nLastInSequenceNr >= cSequence.m_nSequenceNr || flLatency > m_flMaxUnlag - flStaticReal)
 					break;
 			}
+			if (flLatency > 1.f) // hacky failsafe
+				return 0.f;
 
 			pNetChan->m_nInReliableState = nInReliableState;
 			pNetChan->m_nInSequenceNr = nInSequenceNr;
@@ -396,8 +392,8 @@ void CBacktrack::Draw(CTFPlayer* pLocal)
 	}
 	float flFakeLerp = GetFakeInterp() > G::Lerp ? GetFakeInterp() : 0.f;
 
-	float flFake = std::min(flFakeLatency + flFakeLerp, m_flMaxUnlag) * 1000.f;
-	float flLatency = std::max(pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING) - flFakeLatency, 0.f) * 1000.f;
+	float flFake = std::min(flFakeLatency + flFakeLerp, m_flMaxUnlag) * 1000;
+	float flLatency = std::max(pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING) - flFakeLatency, 0.f) * 1000;
 	int iLatencyScoreboard = pResource->m_iPing(pLocal->entindex());
 
 	int x = Vars::Menu::PingDisplay.Value.x;
@@ -417,8 +413,8 @@ void CBacktrack::Draw(CTFPlayer* pLocal)
 		align = ALIGN_TOPRIGHT;
 	}
 
-	if (flFake || Vars::Backtrack::Interp.Value)
-		H::Draw.String(fFont, x, y, Vars::Menu::Theme::Active.Value, align, std::format("Ping {:.0f} (+ {:.0f}) ms", flLatency, flFake).c_str());
+	if (flFake || Vars::Backtrack::Interp.Value > G::Lerp * 1000)
+		H::Draw.StringOutlined(fFont, x, y, Vars::Menu::Theme::Active.Value, Vars::Menu::Theme::Background.Value, align, std::format("Ping {:.0f} (+ {:.0f}) ms", flLatency, flFake).c_str());
 	else
 		H::Draw.String(fFont, x, y, Vars::Menu::Theme::Active.Value, align, std::format("Ping {:.0f} ms", flLatency).c_str());
 	H::Draw.String(fFont, x, y += nTall, Vars::Menu::Theme::Active.Value, align, std::format("Scoreboard {} ms", iLatencyScoreboard).c_str());
