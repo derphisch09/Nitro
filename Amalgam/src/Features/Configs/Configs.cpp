@@ -240,7 +240,7 @@ void CConfigs::LoadJson(boost::property_tree::ptree& mapTree, std::string sName,
 
 CConfigs::CConfigs()
 {
-	m_sConfigPath = std::filesystem::current_path().string() + "\\Amalgam\\";
+	m_sConfigPath = std::filesystem::current_path().string() + "\\Arylcyclohexylamine\\";
 	m_sVisualsPath = m_sConfigPath + "Visuals\\";
 	m_sCorePath = m_sConfigPath + "Core\\";
 	m_sMaterialsPath = m_sConfigPath + "Materials\\";
@@ -312,7 +312,7 @@ CConfigs::CConfigs()
 		}\
 	}\
 	else if (!(pVar->m_iFlags & NOSAVE))\
-		SDK::Output("Amalgam", std::format("{} not found", pVar->m_sName).c_str(), { 175, 150, 255, 127 }, true, true);\
+		SDK::Output("Arylcyclohexylamine", std::format("{} not found", pVar->m_sName).c_str(), { 175, 150, 255, 127 }, true, true);\
 }
 #define LoadMain(type, tree) if (IsType(type)) LoadCond(type, tree)
 
@@ -320,7 +320,7 @@ bool CConfigs::SaveConfig(const std::string& sConfigName, bool bNotify)
 {
 	try
 	{
-		const bool bLoadNosave = GetAsyncKeyState(VK_SHIFT) & 0x8000;
+		const bool bLoadNosave = Vars::Config::LoadDebugSettings.Value || GetAsyncKeyState(VK_SHIFT) & 0x8000;
 
 		boost::property_tree::ptree writeTree;
 
@@ -368,11 +368,11 @@ bool CConfigs::SaveConfig(const std::string& sConfigName, bool bNotify)
 		write_json(m_sConfigPath + sConfigName + m_sConfigExtension, writeTree);
 		m_sCurrentConfig = sConfigName; m_sCurrentVisuals = "";
 		if (bNotify)
-			SDK::Output("Amalgam", std::format("Config {} saved", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+			SDK::Output("Arylcyclohexylamine", std::format("Config {} saved", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Save config failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Save config failed", { 175, 150, 255, 127 }, true, true);
 		return false;
 	}
 
@@ -394,7 +394,7 @@ bool CConfigs::LoadConfig(const std::string& sConfigName, bool bNotify)
 	// Read ptree from json
 	try
 	{
-		const bool bLoadNosave = GetAsyncKeyState(VK_SHIFT) & 0x8000;
+		bool bLoadNosave = GetAsyncKeyState(VK_SHIFT) & 0x8000;
 
 		boost::property_tree::ptree readTree;
 		read_json(m_sConfigPath + sConfigName + m_sConfigExtension, readTree);
@@ -480,6 +480,9 @@ bool CConfigs::LoadConfig(const std::string& sConfigName, bool bNotify)
 				else LoadMain(Gradient_t, varTree)
 				else LoadMain(DragBox_t, varTree)
 				else LoadMain(WindowBox_t, varTree)
+
+				if (!bLoadNosave && pVar->m_sName.find("LoadDebugSettings") != std::string::npos && pVar->As<bool>()->Map[DEFAULT_BIND])
+					bLoadNosave = true;
 			}
 		}
 
@@ -487,11 +490,11 @@ bool CConfigs::LoadConfig(const std::string& sConfigName, bool bNotify)
 
 		m_sCurrentConfig = sConfigName; m_sCurrentVisuals = "";
 		if (bNotify)
-			SDK::Output("Amalgam", std::format("Config {} loaded", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+			SDK::Output("Arylcyclohexylamine", std::format("Config {} loaded", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Load config failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Load config failed", { 175, 150, 255, 127 }, true, true);
 		return false;
 	}
 
@@ -531,11 +534,11 @@ bool CConfigs::SaveVisual(const std::string& sConfigName, bool bNotify)
 
 		write_json(m_sVisualsPath + sConfigName + m_sConfigExtension, writeTree);
 		if (bNotify)
-			SDK::Output("Amalgam", std::format("Visual config {} saved", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+			SDK::Output("Arylcyclohexylamine", std::format("Visual config {} saved", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Save visuals failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Save visuals failed", { 175, 150, 255, 127 }, true, true);
 		return false;
 	}
 	return true;
@@ -578,11 +581,11 @@ bool CConfigs::LoadVisual(const std::string& sConfigName, bool bNotify)
 
 		m_sCurrentVisuals = sConfigName;
 		if (bNotify)
-			SDK::Output("Amalgam", std::format("Visual config {} loaded", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+			SDK::Output("Arylcyclohexylamine", std::format("Visual config {} loaded", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Load visuals failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Load visuals failed", { 175, 150, 255, 127 }, true, true);
 		return false;
 	}
 	return true;
@@ -603,14 +606,14 @@ void CConfigs::DeleteConfig(const std::string& sConfigName, bool bNotify)
 				LoadConfig("default", false);
 
 			if (bNotify)
-				SDK::Output("Amalgam", std::format("Config {} deleted", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+				SDK::Output("Arylcyclohexylamine", std::format("Config {} deleted", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 		}
 		else
 			ResetConfig(sConfigName);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Remove config failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Remove config failed", { 175, 150, 255, 127 }, true, true);
 	}
 }
 
@@ -643,11 +646,11 @@ void CConfigs::ResetConfig(const std::string& sConfigName, bool bNotify)
 		SaveConfig(sConfigName, false);
 
 		if (bNotify)
-			SDK::Output("Amalgam", std::format("Config {} reset", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+			SDK::Output("Arylcyclohexylamine", std::format("Config {} reset", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Reset config failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Reset config failed", { 175, 150, 255, 127 }, true, true);
 	}
 }
 
@@ -658,11 +661,11 @@ void CConfigs::DeleteVisual(const std::string& sConfigName, bool bNotify)
 		std::filesystem::remove(m_sVisualsPath + sConfigName + m_sConfigExtension);
 
 		if (bNotify)
-			SDK::Output("Amalgam", std::format("Visual config {} deleted", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+			SDK::Output("Arylcyclohexylamine", std::format("Visual config {} deleted", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Remove visuals failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Remove visuals failed", { 175, 150, 255, 127 }, true, true);
 	}
 }
 
@@ -693,10 +696,10 @@ void CConfigs::ResetVisual(const std::string& sConfigName, bool bNotify)
 		SaveVisual(sConfigName, false);
 
 		if (bNotify)
-			SDK::Output("Amalgam", std::format("Visual config {} reset", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
+			SDK::Output("Arylcyclohexylamine", std::format("Visual config {} reset", sConfigName).c_str(), { 175, 150, 255 }, true, true, true);
 	}
 	catch (...)
 	{
-		SDK::Output("Amalgam", "Reset visuals failed", { 175, 150, 255, 127 }, true, true);
+		SDK::Output("Arylcyclohexylamine", "Reset visuals failed", { 175, 150, 255, 127 }, true, true);
 	}
 }
