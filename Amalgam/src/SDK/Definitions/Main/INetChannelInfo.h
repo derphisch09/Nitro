@@ -33,4 +33,25 @@ public:
 	virtual void GetPacketResponseLatency(int flow, int frame_number, int* pnLatencyMsecs, int* pnChoke) const = 0;
 	virtual void GetRemoteFramerate(float* pflFrameTime, float* pflFrameTimeStdDeviation) const = 0;
 	virtual float GetTimeoutSeconds() const = 0;
+
+public:
+	int& m_nInSequenceNr()
+	{
+		return *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this) + 16);
+	}
+
+	int& m_nOutSequenceNr()
+	{
+		return *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this) + 12);
+	}
+
+	int& m_nInReliableState()
+	{
+		return *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this) + 28);
+	}
+
+	int& m_nChokedPackets()
+	{
+		return *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this) + 32);
+	}
 };
