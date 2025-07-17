@@ -7,6 +7,11 @@ Vec3 CTFPlayer::GetEyeAngles()
 	return { m_angEyeAnglesX(), m_angEyeAnglesY(), 0.f };
 }
 
+Vec3 CTFPlayer::GetEyePosition()
+{
+	return m_vecOrigin() + m_vecViewOffset();
+}
+
 Vec3 CTFPlayer::GetViewOffset()
 {
 	if (!IsPlayer())
@@ -85,10 +90,23 @@ bool CTFPlayer::InCond(const ETFCond cond)
 	return false;
 }
 
+bool CTFPlayer::IsZoomed()
+{
+	return InCond(TF_COND_ZOOMED);
+}
+
+bool CTFPlayer::IsStealthed()
+{
+	return InCond(TF_COND_STEALTHED)
+		|| InCond(TF_COND_STEALTHED_USER_BUFF)
+		|| InCond(TF_COND_STEALTHED_USER_BUFF_FADING);
+}
+
 bool CTFPlayer::IsAGhost()
 {
 	return InCond(TF_COND_HALLOWEEN_GHOST_MODE);
 };
+
 bool CTFPlayer::IsTaunting()
 {
 	return InCond(TF_COND_TAUNTING);
@@ -103,6 +121,15 @@ bool CTFPlayer::IsInvisible()
 		return false;
 
 	return m_flInvisibility() >= 1.f;
+}
+
+float CTFPlayer::GetInvisiblePercentage()
+{
+	static auto tf_spy_invis_time = I::CVar->FindVar("tf_spy_invis_time");
+	const float flInvisTime = tf_spy_invis_time ? tf_spy_invis_time->GetFloat() : 1.f;
+	const float GetInvisPercent = Math::RemapVal(m_flInvisChangeCompleteTime() - I::GlobalVars->curtime, flInvisTime, 0.f, 0.f, 100.f);
+
+	return GetInvisPercent;
 }
 
 bool CTFPlayer::IsInvulnerable()
