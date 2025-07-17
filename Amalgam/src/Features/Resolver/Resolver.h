@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../../SDK/SDK.h"
 
 struct ResolveData
@@ -15,12 +16,29 @@ struct ResolveData
 	bool m_bAutoSetPitch = true;
 	bool m_bFirstOOBPitch = false;
 	bool m_bInversePitch = false;
+
+	int m_iHitCount = 0;
+	int m_iMissCount = 0;
+	float m_flLastYawAttempt = 0.f;
+	float m_flLastSuccessfulYaw = 0.f;
+	float m_flLastPitchAttempt = 0.f;
+	float m_flLastSuccessfulPitch = 0.f;
+
+	float m_flYawConfidence = 0.f;
+	float m_flPitchConfidence = 0.f;
+	int m_iMissedShots = 0;
+	float m_flLastYaw = 0.f;
+	float m_flLastYawDelta = 0.f;
 };
 
 class CResolver
 {
 	void StoreSniperDots(CTFPlayerResource* pResource);
 	std::optional<float> GetPitchForSniperDot(CTFPlayer* pEntity, CTFPlayerResource* pResource);
+
+	bool IsUsingAntiAim(CTFPlayer* pPlayer, CTFPlayerResource* pResource);
+	void UpdateConfidence(int iUserID, bool bHit, int iHitbox);
+	float GetSmartYawOffset(int iUserID, CTFPlayer* pPlayer);
 	
 	std::unordered_map<int, ResolveData> m_mResolverData = {};
 	std::unordered_map<int, Vec3> m_mSniperDots = {};
