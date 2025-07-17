@@ -6,8 +6,11 @@ struct PlayerData
 {
 	Vec3 m_vecOrigin = {};
 	Vec3 m_vecVelocity = {};
+	Vec3 m_vecAbsVelocity = {};
 	Vec3 m_vecBaseVelocity = {};
 	Vec3 m_vecViewOffset = {};
+	Vec3 m_vecMins = {};
+	Vec3 m_vecMaxs = {};
 	EHANDLE m_hGroundEntity = nullptr;
 	int m_fFlags = 0;
 	float m_flDucktime = 0.f;
@@ -29,6 +32,8 @@ struct PlayerData
 	float m_flMaxspeed = 0.f;
 	int m_nAirDucked = 0;
 	bool m_bJumping = false;
+	bool m_bAllowAutoMovement = false;
+	float m_flStepSize = 0.f;
 	int m_iAirDash = 0;
 	float m_flWaterJumpTime = 0.f;
 	float m_flSwimSoundTime = 0.f;
@@ -53,6 +58,7 @@ struct PlayerData
 	int m_nPlayerCondEx4 = 0;
 	int _condition_bits = 0;
 };
+
 struct PlayerStorage
 {
 	CTFPlayer* m_pPlayer = nullptr;
