@@ -266,14 +266,14 @@ void CAutoHeal::GetDangers(CTFPlayer* pTarget, bool bVaccinator, float& flBullet
 			bool bHeadshot = pWeapon->As<CTFSniperRifle>()->GetRifleType() != RIFLE_JARATE;
 			bool bPiss = SDK::AttribHookValue(0, "jarate_duration", pWeapon) > 0;
 			auto GetSniperDot = [](CBaseEntity* pEntity) -> CSniperDot*
+			{
+				for (auto pDot : H::Entities.GetGroup(EGroupType::MISC_DOTS))
 				{
-					for (auto pDot : H::Entities.GetGroup(EGroupType::MISC_DOTS))
-					{
-						if (pDot->m_hOwnerEntity().Get() == pEntity)
-							return pDot->As<CSniperDot>();
-					}
-					return nullptr;
-				};
+					if (pDot->m_hOwnerEntity().Get() == pEntity)
+						return pDot->As<CSniperDot>();
+				}
+				return nullptr;
+			};
 			if (CSniperDot* pPlayerDot = GetSniperDot(pEntity))
 			{
 				float flChargeTime = std::max(SDK::AttribHookValue(3.f, "mult_sniper_charge_per_sec", pWeapon), 1.5f);
@@ -318,7 +318,7 @@ void CAutoHeal::GetDangers(CTFPlayer* pTarget, bool bVaccinator, float& flBullet
 				flDistanceDanger = std::max(flDistanceDanger, bCrits ? 1.f : 0.34f);
 
 #ifdef DEBUG_VACCINATOR
-			//SDK::Output("Hitscan", std::format("{}, {}, {}, {}, {}", flDamage, flSpread, flDamageInLatency, flDamageDanger, flDistanceDanger).c_str(), { 255, 200, 200 }, Vars::Debug::Logging.Value);
+			SDK::Output("Hitscan", std::format("{}, {}, {}, {}, {}", flDamage, flSpread, flDamageInLatency, flDamageDanger, flDistanceDanger).c_str(), { 255, 200, 200 }, Vars::Debug::Logging.Value);
 #endif
 			flBulletDanger += flDamageDanger * flDistanceDanger;
 			break;
@@ -447,8 +447,106 @@ void CAutoHeal::GetDangers(CTFPlayer* pTarget, bool bVaccinator, float& flBullet
 			continue;
 
 		int iType = MEDIGUN_BLAST_RESIST;
+<<<<<<< Updated upstream
 		float flMult = GetMult(pEntity, pWeapon, pTarget);
 		float flDamage = GetDamage(pEntity, pOwner, pWeapon, pTarget, flMult, vProjectileOrigin, &iType);
+=======
+		float flDamage = 100.f, flMult = pTarget->IsMarked() ? 1.36f : 1.f;
+		switch (pEntity->GetClassID())
+		{
+		case ETFClassID::CTFGrenadePipebombProjectile:
+		case ETFClassID::CTFWeaponBaseMerasmusGrenade:
+		case ETFClassID::CTFProjectile_SpellMeteorShower:
+			if (pEntity->As<CTFWeaponBaseGrenadeProj>()->m_bCritical())
+				flMult = 3.f;
+			else if (pEntity->As<CTFWeaponBaseGrenadeProj>()->m_iDeflected() && (pEntity->GetClassID() != ETFClassID::CTFGrenadePipebombProjectile || !pEntity->GetAbsVelocity().IsZero()))
+				flMult = 1.36f;
+			break;
+		case ETFClassID::CTFProjectile_Arrow:
+			if (pEntity->As<CTFProjectile_Arrow>()->m_iProjectileType() == TF_PROJECTILE_ARROW)
+			{
+				flMult = 3.f;
+				break;
+			}
+			[[fallthrough]];
+		case ETFClassID::CTFProjectile_HealingBolt:
+			if (pEntity->As<CTFProjectile_Arrow>()->m_bCritical())
+				flMult = 3.f;
+			else if (pEntity->As<CTFBaseRocket>()->m_iDeflected())
+				flMult = 1.36f;
+			break;
+		case ETFClassID::CTFProjectile_Rocket:
+		case ETFClassID::CTFProjectile_BallOfFire:
+		case ETFClassID::CTFProjectile_SentryRocket:
+		case ETFClassID::CTFProjectile_SpellFireball:
+		case ETFClassID::CTFProjectile_SpellLightningOrb:
+			if (pEntity->As<CTFProjectile_Rocket>()->m_bCritical())
+				flMult = 3.f;
+			else if (pEntity->As<CTFBaseRocket>()->m_iDeflected())
+				flMult = 1.36f;
+			break;
+		case ETFClassID::CTFProjectile_EnergyBall:
+			if (pEntity->As<CTFProjectile_EnergyBall>()->m_bChargedShot())
+				flMult = 2.f; // whatever
+			else if (pEntity->As<CTFBaseRocket>()->m_iDeflected())
+				flMult = 1.36f;
+			break;
+		case ETFClassID::CTFProjectile_Flare:
+			if (pEntity->As<CTFProjectile_Flare>()->m_bCritical() || pTarget->InCond(TF_COND_BURNING) || pTarget->InCond(TF_COND_BURNING_PYRO))
+				flMult = 3.f;
+			else if (pEntity->As<CTFBaseRocket>()->m_iDeflected())
+				flMult = 1.36f;
+		}
+		switch (pEntity->GetClassID())
+		{
+		case ETFClassID::CTFGrenadePipebombProjectile:
+			flDamage = 100.f;
+			break;
+		case ETFClassID::CTFWeaponBaseMerasmusGrenade:
+			flDamage = 50.f;
+			break;
+		case ETFClassID::CTFProjectile_SpellMeteorShower:
+			flDamage = 100.f;
+			iType = MEDIGUN_FIRE_RESIST;
+			break;
+		case ETFClassID::CTFProjectile_Arrow:
+			flDamage = pEntity->As<CTFProjectile_Arrow>()->m_iProjectileType() == TF_PROJECTILE_ARROW
+				? Math::RemapVal(pEntity->As<CTFProjectile_Arrow>()->m_vInitialVelocity().Length(), 1800.f, 2600.f, 50.f, 120.f)
+				: 40.f;
+			iType = MEDIGUN_BULLET_RESIST;
+			break;
+		case ETFClassID::CTFProjectile_HealingBolt:
+			flDamage = Math::RemapVal(pOwner->m_vecOrigin().DistTo(vProjectileOrigin), 200.f, 1600.f, 38.f, 75.f);
+			iType = MEDIGUN_BULLET_RESIST;
+			break;
+		case ETFClassID::CTFProjectile_Rocket:
+		case ETFClassID::CTFProjectile_EnergyBall:
+			flDamage = flMult ? 90.f : Math::RemapVal(pOwner->m_vecOrigin().DistTo(vProjectileOrigin), 500.f, 920.f, 90.f, 48.f);
+			break;
+		case ETFClassID::CTFProjectile_SentryRocket:
+			flDamage = flMult ? 100.f : Math::RemapVal(pOwner->m_vecOrigin().DistTo(vProjectileOrigin), 100.f, 920.f, 100.f, 50.f);
+			break;
+		case ETFClassID::CTFProjectile_BallOfFire:
+			flDamage = pTarget->InCond(TF_COND_BURNING) || pTarget->InCond(TF_COND_BURNING_PYRO) ? 90.f : 30.f;
+			iType = MEDIGUN_FIRE_RESIST;
+			break;
+		case ETFClassID::CTFProjectile_SpellFireball:
+			flDamage = 100.f;
+			iType = MEDIGUN_FIRE_RESIST;
+			break;
+		case ETFClassID::CTFProjectile_SpellLightningOrb:
+			flDamage = 100.f;
+			iType = MEDIGUN_FIRE_RESIST;
+			break;
+		case ETFClassID::CTFProjectile_Flare:
+			flDamage = 30.f;
+			iType = MEDIGUN_FIRE_RESIST;
+			break;
+		case ETFClassID::CTFProjectile_EnergyRing:
+			flDamage = 60.f;
+			iType = MEDIGUN_BULLET_RESIST;
+		}
+>>>>>>> Stashed changes
 		switch (iType)
 		{
 		case MEDIGUN_BULLET_RESIST: flMult = flBulletResist > 0.f ? 1.f - flBulletResist : flMult + flBulletResist; break;
@@ -586,7 +684,7 @@ void CAutoHeal::AutoVaccinator(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUser
 	if (m_flSwapTime < I::GlobalVars->curtime)
 		m_iResistType = pWeapon->GetResistType();
 	m_flChargeLevel = pWeapon->m_flChargeLevel();
-}
+	}
 
 void CAutoHeal::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 {
@@ -600,7 +698,7 @@ void CAutoHeal::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 
 	ActivateOnVoice(pLocal, pWeapon->As<CWeaponMedigun>(), pCmd);
 	m_mMedicCallers.clear();
-	
+
 	AutoVaccinator(pLocal, pWeapon->As<CWeaponMedigun>(), pCmd);
 }
 
