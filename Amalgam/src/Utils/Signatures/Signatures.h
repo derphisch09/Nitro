@@ -33,6 +33,48 @@ public:
 	{
 		return reinterpret_cast<T(__fastcall*)(Args...)>(m_dwVal)(args...);
 	}
+
+	template <typename T>
+	inline T Offset(const int iOffset)
+	{
+		if (m_dwVal)
+			m_dwVal += iOffset;
+
+		return *this;
+	}
+
+	template <typename T>
+	inline T Deref(int iCount = 1)
+	{
+		uintptr_t m_pOut = m_dwVal;
+
+		while (m_pOut && iCount > 0)
+		{
+			m_pOut = *reinterpret_cast<T>(m_pOut);
+
+			if (!m_pOut)
+				return m_dwVal;
+
+			iCount--;
+		}
+
+		m_dwVal = m_pOut;
+		return *this;
+	}
+
+	template <typename T>
+	inline T FixRip(const int iOffset = 1)
+	{
+		if (m_dwVal && iOffset)
+		{
+			uintptr_t m_pBase = m_dwVal + iOffset;
+			auto m_pRipAddress = *reinterpret_cast<T>(m_pBase);
+			m_pBase += 4 + m_pRipAddress;
+			m_dwVal = m_pBase;
+		}
+
+		return *this;
+	}
 };
 
 #define MAKE_SIGNATURE(name, dll, sig, offset) namespace S { inline CSignature name(dll, sig, offset, #name); }
