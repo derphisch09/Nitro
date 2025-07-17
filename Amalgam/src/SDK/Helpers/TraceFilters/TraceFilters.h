@@ -1,6 +1,8 @@
 #pragma once
+
 #include "../../Definitions/Interfaces/IEngineTrace.h"
 
+<<<<<<< Updated upstream
 enum
 {
 	SKIP_CHECK,
@@ -24,6 +26,14 @@ enum
 	OBJECT_DEFAULT,
 	OBJECT_NONE,
 	OBJECT_ALL
+=======
+class CTraceFilterEntitiesOnly : public ITraceFilter
+{
+public:
+	bool ShouldHitEntity(IHandleEntity* pServerEntity, int contentsMask) override;
+	TraceType_t	GetTraceType() const override;
+	CBaseEntity* pSkip = nullptr;
+>>>>>>> Stashed changes
 };
 
 class CTraceFilterHitscan : public ITraceFilter
@@ -62,6 +72,32 @@ public:
 	bool ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask) override;
 	TraceType_t GetTraceType() const override;
 	CBaseEntity* pSkip = nullptr;
+<<<<<<< Updated upstream
 
 	int iTeam = -1;
+=======
+};
+
+class CTraceFilterNavigation : public ITraceFilter
+{
+public:
+	bool ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask) override;
+	TraceType_t GetTraceType() const override;
+};
+
+class CTraceFilterWorldCustom : public ITraceFilter
+{
+public:
+	bool ShouldHitEntity(IHandleEntity* pServerEntity, int contentsMask) override;
+	TraceType_t GetTraceType() const override;
+	CBaseEntity* pSkip = nullptr;
+};
+
+class CTraceFilterArc : public ITraceFilter
+{
+public:
+	bool ShouldHitEntity(IHandleEntity* pServerEntity, int contentsMask) override;
+	TraceType_t GetTraceType() const override;
+	CBaseEntity* pSkip = nullptr;
+>>>>>>> Stashed changes
 };
