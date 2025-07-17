@@ -1,5 +1,8 @@
 #pragma once
+
 #include "CEconEntity.h"
+
+MAKE_SIGNATURE(CBaseCombatWeapon_HasAmmo, "client.dll", "40 53 48 83 EC ? 83 B9 ? ? ? ? ? 48 8B D9 75 ? 83 B9 ? ? ? ? ? 74 ? 48 8B 01", 0x0);
 
 class CBaseCombatWeapon : public CEconEntity
 {
@@ -22,6 +25,18 @@ public:
 	NETVAR_OFF(m_bInReload, bool, "CBaseCombatWeapon", "m_flTimeWeaponIdle", 4);
 	NETVAR_OFF(m_bRemoveable, bool, "CBaseCombatWeapon", "m_iState", -12);
 
+	OFFSET(m_flCritTokenBucket, float, 3732);
+	OFFSET(m_nCritChecks, int, 3736);
+	OFFSET(m_nCritSeedRequests, int, 3740);
+	OFFSET(m_flLastRapidFireCritCheckTime, float, 4036);
+	OFFSET(m_flCritTime, float, 4020);
+
 	VIRTUAL(CanBeSelected, bool, 233, this);
+<<<<<<< Updated upstream
 	VIRTUAL(GetName, const char*, 334, this);
+=======
+	VIRTUAL(GetName, const char*, 333, this);
+
+	SIGNATURE(HasAmmo, bool, CBaseCombatWeapon, this);
+>>>>>>> Stashed changes
 };
