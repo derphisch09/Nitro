@@ -129,7 +129,7 @@
     <ClCompile Include="src\Hooks\CNetChannel_SendDatagram.cpp" />
     <ClCompile Include="src\Hooks\CNetChannel_SendNetMsg.cpp" />
     <ClCompile Include="src\Hooks\COPRenderSprites_Render.cpp" />
-    <ClCompile Include="src\Hooks\CParticleProperty_Create.cpp" />
+    <ClCompile Include="src\Hooks\CParticleProperty_CreateName.cpp" />
     <ClCompile Include="src\Hooks\CPlayerResource_GetPlayerName.cpp" />
     <ClCompile Include="src\Hooks\CPrediction_RunSimulation.cpp" />
     <ClCompile Include="src\Hooks\CRendering3dView_EnableWorldFog.cpp" />
@@ -203,6 +203,52 @@
     <ClCompile Include="src\SDK\Definitions\Main\CBaseProjectile.cpp" />
     <ClCompile Include="src\Hooks\CTFRocketLauncher_CheckReloadMisfire.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_FrameAdvance.cpp" />
+    <ClCompile Include="src\Hooks\CBaseEntity_Interpolate.cpp" />
+    <ClCompile Include="src\Hooks\CTFGCClientSystem_BHasCompetitiveAccess.cpp" />
+    <ClCompile Include="src\Hooks\CTFGCClientSystem_BLocalPlayerInventoryHasMvmTicket.cpp" />
+    <ClCompile Include="src\Hooks\CTFParty_BAnyMemberWithoutCompetitiveAccess.cpp" />
+    <ClCompile Include="src\Hooks\CTFParty_BAnyMemberWithoutTicket.cpp" />
+    <ClCompile Include="src\Hooks\CTFParty_GetMemberActivity.cpp" />
+    <ClCompile Include="src\Hooks\ReportAbuse.cpp" />
+    <ClCompile Include="src\Hooks\Host_IsSecureServerAllowed.cpp" />
+    <ClCompile Include="src\Hooks\CGameEventManager_FireEventClientSide.cpp" />
+    <ClCompile Include="src\Features\Visuals\Killstreak\Killstreak.cpp" />
+    <ClCompile Include="src\Hooks\CHudItemEffectMeter_Weapon_CTFWeaponBase_IsEnabled.cpp" />
+    <ClCompile Include="src\Hooks\CBasePlayer_CalcDeathCamView.cpp" />
+    <ClCompile Include="src\Hooks\CBasePlayer_CalcFreezeCamView.cpp" />
+    <ClCompile Include="src\Hooks\COPRenderSprites_RenderSpriteCard.cpp" />
+    <ClCompile Include="src\Hooks\COPRenderSprites_RenderTwoSequenceSpriteCard.cpp" />
+    <ClCompile Include="src\Hooks\S_StartSound.cpp" />
+    <ClCompile Include="src\Hooks\CParticleProperty_CreatePoint.cpp" />
+    <ClCompile Include="src\Hooks\CBasePlayer_EyePosition.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayer_EyeAngles.cpp" />
+    <ClCompile Include="src\Hooks\CTFInput_CAM_CapYaw.cpp" />
+    <ClCompile Include="src\Hooks\CTFMatchSummary_UpdatePlayerAvatar.cpp" />
+    <ClCompile Include="src\Hooks\CTFHudMannVsMachineScoreboard_UpdatePlayerAvatar.cpp" />
+    <ClCompile Include="src\Hooks\CTFHudMatchStatus_UpdatePlayerAvatar.cpp" />
+    <ClCompile Include="src\Hooks\SectionedListPanel_SetItemFgColor.cpp" />
+    <ClCompile Include="src\Hooks\CBasePlayer_ShouldDrawThisPlayer.cpp" />
+    <ClCompile Include="src\Hooks\CBasePlayer_ShouldDrawLocalPlayer.cpp" />
+    <ClCompile Include="src\Hooks\CBaseCombatWeapon_ShouldDraw.cpp" />
+    <ClCompile Include="src\Hooks\CViewRender_DrawViewModels.cpp" />
+    <ClCompile Include="src\Hooks\CTFTeamStatusPlayerPanel_Update.cpp" />
+    <ClCompile Include="src\Hooks\VGuiPanel_SetBgColor.cpp" />
+    <ClCompile Include="src\Hooks\CTFRocketLauncher_FireProjectile.cpp" />
+    <ClCompile Include="src\Hooks\CTFInventoryManager_GetItemInLoadoutForClass.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayerInventory_VerifyChangedLoadoutsAreValid.cpp" />
+    <ClCompile Include="src\Hooks\HostState_Restart.cpp" />
+    <ClCompile Include="src\Hooks\CMultiPlayerAnimState_ComputePoseParamAimYaw.cpp" />
+    <ClCompile Include="src\Hooks\CSequenceTransitioner_CheckForSequenceChange.cpp" />
+    <ClCompile Include="src\Hooks\CTFGCClientSystem_SOCreated.cpp" />
+    <ClCompile Include="src\Hooks\CTFPartyClient_BCanRequestToJoinPlayer.cpp" />
+    <ClCompile Include="src\Hooks\CClientState_GetTime.cpp" />
+    <ClCompile Include="src\Hooks\CInterpolatedVarArrayBase_Interpolate.cpp" />
+    <ClCompile Include="src\Hooks\CNetChannel_ProcessPacket.cpp" />
+    <ClCompile Include="src\Hooks\IVEngineClient_IsPaused.cpp" />
+    <ClCompile Include="src\Features\Animations\Animations.cpp" />
+    <ClCompile Include="src\Features\EnginePrediction\DatamapModifier.cpp" />
+    <ClCompile Include="src\Hooks\CPrediction_RunCommand.cpp" />
+    <ClCompile Include="src\Features\Visuals\Precipitation\Precipitation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Utils\UtlVector\UtlVector.h" />
@@ -585,13 +631,45 @@
     <ClInclude Include="src\SDK\Definitions\Main\PlayerStats.h" />
     <ClInclude Include="src\Features\Visuals\Groups\Groups.h" />
     <ClInclude Include="src\SDK\Definitions\Interfaces\IKeyValuesSystem.h" />
-    <ClInclude Include="src\SDK\Definitions\Main\UtlBlockMemory.h" />
-    <ClInclude Include="src\SDK\Definitions\Main\UtlMemory.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CTEFireBullets.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CFuncRespawnRoom.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CServerBaseEntity.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CBaseToggle.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CBaseTrigger.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CBaseTeamObjectiveResource.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\IServerEntity.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\IServerUnknown.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\IServerNetworkable.h" />
+    <ClInclude Include="src\SDK\Definitions\Misc\edict_t.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\CTFInventoryManager.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\CServerTools.h" />
+    <ClInclude Include="src\Features\Visuals\Killstreak\Killstreak.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CParticleCollection.h" />
+    <ClInclude Include="src\Features\ImGui\Fonts\Roboto\RobotoBold.h" />
+    <ClInclude Include="include\sol\config.hpp" />
+    <ClInclude Include="include\sol\forward.hpp" />
+    <ClInclude Include="include\sol\sol.hpp" />
+    <ClInclude Include="include\Lua\lauxlib.h" />
+    <ClInclude Include="include\Lua\lua.h" />
+    <ClInclude Include="include\Lua\lua.hpp" />
+    <ClInclude Include="include\Lua\luaconf.h" />
+    <ClInclude Include="include\Lua\lualib.h" />
+    <ClInclude Include="src\Features\Animations\Animations.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\IMemAlloc.h" />
+    <ClInclude Include="src\Features\EnginePrediction\DatamapModifier.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\IPredictionSystem.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\IDemoRecorder.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\IDemoPlayer.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\IPredictableList.h" />
+    <ClInclude Include="src\SDK\Definitions\Interfaces\IFileSystem.h" />
+    <ClInclude Include="src\SDK\Definitions\Main\CPredictionCopy.h" />
+    <ClInclude Include="src\Features\Visuals\Precipitation\Precipitation.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="include\freetype\freetype.lib" />
+    <Library Include="include\Lua\lua54.lib" />
   </ItemGroup>
 </Project>
