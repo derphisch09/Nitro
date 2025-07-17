@@ -116,9 +116,9 @@ bool CAimbotGlobal::IsHitboxValid(uint32_t uHash, int nHitbox, int iHitboxes)
 	return false;
 }
 
-bool CAimbotGlobal::ShouldIgnore(CBaseEntity* pEntity, CTFPlayer* pLocal, CTFWeaponBase* pWeapon)
+bool CAimbotGlobal::ShouldIgnore(CBaseEntity* pEntity, CTFPlayer* pLocal, CTFWeaponBase* pWeapon, bool bIgnoreDormant)
 {
-	if (pEntity->IsDormant())
+	if (bIgnoreDormant && pEntity->IsDormant())
 		return true;
 
 	if (auto pGameRules = I::TFGameRules())
