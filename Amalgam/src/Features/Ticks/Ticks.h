@@ -1,7 +1,6 @@
 #pragma once
-#include "../../SDK/SDK.h"
 
-//#define TICKBASE_DEBUG
+#include "../../SDK/SDK.h"
 
 class CTicks
 {
@@ -45,6 +44,7 @@ public:
 	bool m_bDoubletap = false;
 	bool m_bWarp = false;
 	bool m_bRecharge = false;
+	bool m_bRechargeQueue = false;
 	bool m_bAntiWarp = false;
 	bool m_bSpeedhack = false;
 
