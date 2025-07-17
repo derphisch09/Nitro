@@ -118,6 +118,11 @@ public:
 		int iCurrentMatchGroup = GetCurrentMatchGroup();
 		return S::GetMatchGroupDescription.Call<IMatchGroupDescription*>(std::ref(iCurrentMatchGroup));
 	}
+
+	inline CTFGameRules* Get()
+	{
+		return reinterpret_cast<CTFGameRules*>(this);
+	}
 };
 
 namespace I
