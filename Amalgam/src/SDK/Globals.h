@@ -100,12 +100,17 @@ namespace G
 	inline AimTarget_t AimTarget = {};
 	inline AimPoint_t AimPoint = {};
 
+	inline Vec3 ViewAngles = {};
+	inline Vec3 EyeAngles = {};
+	inline Vec3 EyePosition = {};
+
 	inline bool SilentAngles = false;
 	inline bool PSilentAngles = false;
 
 	inline bool AntiAim = false;
 	inline bool Choking = false;
 
+	inline bool ConstructingBones = false;
 	inline bool UpdatingAnims = false;
 	inline bool DrawingProps = false;
 	inline bool FlipViewmodels = false;
@@ -115,6 +120,12 @@ namespace G
 	inline std::vector<DrawBox_t> BoxStorage = {};
 	inline std::vector<DrawSphere_t> SphereStorage = {};
 	inline std::vector<DrawSwept_t> SweptStorage = {};
+
+	inline int SavedDefinitionIndexes[3] = { -1,-1,-1 };
+	inline int SavedWeaponIds[3] = { -1,-1,-1 };
+	inline int AmmoInSlot[2] = { 0, 0 };
+
+	inline int PlayerIndex;
 
 	inline int* RandomSeed()
 	{
