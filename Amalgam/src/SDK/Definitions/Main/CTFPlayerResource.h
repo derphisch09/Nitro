@@ -50,4 +50,10 @@ public:
 	NETVAR_ARRAY(m_flConnectTime, float, "CTFPlayerResource", "m_flConnectTime");
 
 	NETVAR_ARRAY_OFF(m_pszPlayerName, const char*, "CTFPlayerResource", "m_iPing", -816);
+
+	void SetStreak(int iPlayerIndex, int iStreakType, int iStreak)
+	{
+		static int nOffset = U::NetVars.GetNetVar("CTFPlayerResource", "m_iStreaks");
+		*reinterpret_cast<int*>(uintptr_t(this) + nOffset + iPlayerIndex * kTFStreak_COUNT + iStreakType) = iStreak;
+	}
 };
