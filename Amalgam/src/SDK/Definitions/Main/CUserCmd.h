@@ -1,10 +1,15 @@
 #pragma once
+
 #include "../Types.h"
+#include "../../../Utils/Signatures/Signatures.h"
+
+MAKE_SIGNATURE(CUserCmd_GetCheckSum, "client.dll", "40 53 48 83 EC 20 48 8B D9 48 8D 4C", 0x0);
 
 class CUserCmd
 {
 public:
 	virtual ~CUserCmd() {};
+
 	int	command_number = 0;
 	int	tick_count = 0;
 	QAngle viewangles = {};
@@ -39,6 +44,8 @@ public:
 		mousedy = other.mousedy;
 		hasbeenpredicted = other.hasbeenpredicted;
 	}
+
+	SIGNATURE(GetCheckSum, uint64_t, CUserCmd, this);
 };
 
 #define IN_ATTACK (1 << 0)
