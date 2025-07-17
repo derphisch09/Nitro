@@ -67,15 +67,25 @@ private:
 
 public:
 	void Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd);
+<<<<<<< Updated upstream
+=======
+	bool CalcIsAttackCriticalHandler(CTFPlayer* pLocal, CTFWeaponBase* pWeapon);
+>>>>>>> Stashed changes
 	void Event(IGameEvent* pEvent, uint32_t uHash, CTFPlayer* pLocal);
 	void Store();
 	void Draw(CTFPlayer* pLocal);
 
 	bool WeaponCanCrit(CTFWeaponBase* pWeapon, bool bWeaponOnly = false);
 	int PredictCmdNum(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd);
+	float GetCost(CTFWeaponBase* pWeapon);
 
 	std::unordered_map<int, WeaponStorage_t> m_mStorage = {};
+<<<<<<< Updated upstream
 	int m_iWishRandomSeed = 0;
+=======
+
+	bool m_bForce = false;
+>>>>>>> Stashed changes
 };
 
 ADD_FEATURE(CCritHack, CritHack);
