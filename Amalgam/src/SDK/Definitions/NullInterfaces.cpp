@@ -17,6 +17,17 @@ bool CNullInterfaces::Initialize()
 	I::KeyValuesSystem = U::Memory.GetModuleExport<IKeyValuesSystem*(*)()>("vstdlib.dll", "KeyValuesSystem")();
 	Validate(I::KeyValuesSystem);
 
+	I::MemAlloc = U::Memory.GetModuleExport<IMemAlloc*>("tier0.dll", "g_pMemAlloc");
+	Validate(I::MemAlloc);
+
+	// Validate SteamClient before using it
+	if (!I::SteamClient)
+	{
+		U::Core.AppendFailText("CNullInterfaces::Initialize() failed to initialize I::SteamClient - null pointer");
+		m_bFailed = true;
+		return !m_bFailed;
+	}
+
 	const HSteamPipe hsNewPipe = I::SteamClient->CreateSteamPipe();
 	Validate(hsNewPipe);
 
