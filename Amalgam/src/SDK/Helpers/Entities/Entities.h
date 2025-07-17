@@ -2,15 +2,45 @@
 #include "../../../Utils/Feature/Feature.h"
 #include "../../Definitions/Classes.h"
 #include <unordered_map>
+#include <unordered_set>
 
 enum struct EGroupType
 {
 	GROUP_INVALID = -1,
-	PLAYERS_ALL, PLAYERS_ENEMIES, PLAYERS_TEAMMATES,
-	BUILDINGS_ALL, BUILDINGS_ENEMIES, BUILDINGS_TEAMMATES,
-	PICKUPS_HEALTH, PICKUPS_AMMO, PICKUPS_MONEY, PICKUPS_POWERUP, PICKUPS_SPELLBOOK,
-	WORLD_PROJECTILES, WORLD_OBJECTIVE, WORLD_NPC, WORLD_BOMBS, WORLD_GARGOYLE,
-	MISC_LOCAL_STICKIES, MISC_LOCAL_FLARES, MISC_DOTS
+
+	PLAYERS_ALL, 
+	PLAYERS_ENEMIES, 
+	PLAYERS_TEAMMATES,
+
+	BUILDINGS_ALL, 
+	BUILDINGS_ENEMIES, 
+	BUILDINGS_TEAMMATES,
+
+	PROJECTILES_ALL,
+	PROJECTILES_ENEMIES,
+	PROJECTILES_TEAMMATES,
+	PROJECTILES_LOCAL,
+
+	PICKUPS_HEALTH, 
+	PICKUPS_AMMO, 
+	PICKUPS_MONEY, 
+	PICKUPS_POWERUP, 
+	PICKUPS_SPELLBOOK,
+
+	WORLD_PROJECTILES, 
+	WORLD_OBJECTIVE, 
+	WORLD_NPC, 
+	WORLD_BOMBS, 
+	WORLD_GARGOYLE, 
+	WORLD_RESPAWN_ROOMS,
+
+	MISC_LOCAL_STICKIES, 
+	MISC_LOCAL_FLARES, 
+	MISC_DOTS,
+
+	FUNC_TRACK_TRAIN_ALL,
+	FUNC_TRACK_TRAIN_ENEMIES,
+	FUNC_TRACK_TRAIN_TEAMMATES
 };
 
 struct DormantData
@@ -30,9 +60,12 @@ class CEntities
 	CTFPlayer* m_pLocal = nullptr;
 	CTFWeaponBase* m_pLocalWeapon = nullptr;
 	CTFPlayerResource* m_pPlayerResource = nullptr;
+	CBaseTeamObjectiveResource* m_pObjectiveResource = nullptr;
+    CTFGameRules* m_pGameRules  = nullptr;
 
 	std::unordered_map<EGroupType, std::vector<CBaseEntity*>> m_mGroups = {};
 
+<<<<<<< Updated upstream
 	std::unordered_map<int, float> m_mSimTimes = {}, m_mOldSimTimes = {}, m_mDeltaTimes = {}, m_mLagTimes = {};
 	std::unordered_map<int, int> m_mChokes = {}, m_mSetTicks = {};
 	std::unordered_map<int, std::pair<bool, matrix3x4[MAXSTUDIOBONES]>> m_mBones = {};
@@ -53,6 +86,29 @@ class CEntities
 	std::unordered_map<uint32_t, bool> m_mUF2P = {};
 	std::unordered_map<int, int> m_mILevels = {};
 	std::unordered_map<uint32_t, int> m_mULevels = {};
+=======
+	std::unordered_map<int, float> m_mSimTimes, m_mOldSimTimes, m_mDeltaTimes;
+	std::unordered_map<int, int> m_mChokes, m_mSetTicks;
+	std::unordered_map<int, std::pair<bool, matrix3x4[MAXSTUDIOBONES]>> m_mBones;
+	std::unordered_map<int, Vec3> m_mOldAngles, m_mEyeAngles;
+	std::unordered_map<int, bool> m_mLagCompensation;
+	std::unordered_map<int, DormantData> m_mDormancy;
+	std::unordered_map<int, Vec3> m_mAvgVelocities;
+	std::unordered_map<int, uint32_t> m_mModels;
+	std::unordered_map<int, std::deque<VelFixRecord>> m_mOrigins;
+
+	std::unordered_map<int, int> m_mIPriorities;
+	std::unordered_map<uint32_t, int> m_mUPriorities;
+	std::unordered_map<int, bool> m_mIFriends;
+	std::unordered_map<uint32_t, bool> m_mUFriends;
+	std::unordered_map<int, uint64_t> m_mIParty;
+	std::unordered_map<uint32_t, uint64_t> m_mUParty;
+	std::unordered_map<int, bool> m_mIF2P;
+	std::unordered_map<uint32_t, bool> m_mUF2P;
+	std::unordered_map<int, int> m_mILevels;
+	std::unordered_map<uint32_t, int> m_mULevels;
+
+>>>>>>> Stashed changes
 	uint32_t m_uFriendsID;
 
 	bool m_bSettingUpBones = false;
@@ -70,13 +126,14 @@ public:
 	CTFPlayer* GetLocal();
 	CTFWeaponBase* GetWeapon();
 	CTFPlayerResource* GetPR();
+	CBaseTeamObjectiveResource* GetOR();
+	CTFGameRules* GetGR();
 
 	const std::vector<CBaseEntity*>& GetGroup(const EGroupType& Group);
 
-	float GetSimTime(int iIndex);
-	float GetOldSimTime(int iIndex);
+	float GetSimTime(CBaseEntity* pEntity);
+	float GetOldSimTime(CBaseEntity* pEntity);
 	float GetDeltaTime(int iIndex);
-	float GetLagTime(int iIndex);
 	int GetChoke(int iIndex);
 	matrix3x4* GetBones(int iIndex);
 	Vec3 GetEyeAngles(int iIndex);
