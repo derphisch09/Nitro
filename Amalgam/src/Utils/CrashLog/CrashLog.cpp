@@ -141,10 +141,10 @@ static LONG APIENTRY ExceptionFilter(PEXCEPTION_POINTERS ExceptionInfo)
 	try
 	{
 		std::ofstream file;
-		file.open(F::Configs.m_sConfigPath + "crash_log.txt", std::ios_base::app);
+		file.open(F::Configs.m_sConfigPath + "CrashLog.txt", std::ios_base::app);
 		file << ssErrorStream.str() + "\n\n\n";
 		file.close();
-		ssErrorStream << "Logged to Amalgam\\crash_log.txt. ";
+		ssErrorStream << "Logged to Arylcyclohexylamine\\CrashLog.txt. ";
 	}
 	catch (...) {}
 
