@@ -20,10 +20,19 @@ class CAimbotMelee
 	bool FindNearestBuildPoint(CBaseObject* pBuilding, CTFPlayer* pLocal, Vec3& vPoint);
 	bool RunSapper(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd);
 
+<<<<<<< Updated upstream
 	int m_iDoubletapTicks = 0;
 
 	std::unordered_map<int, std::deque<TickRecord>> m_mRecordMap;
 	std::unordered_map<int, std::vector<Vec3>> m_mPaths;
+=======
+	bool AimFriendlyBuilding(CTFPlayer* pLocal, CBaseObject* pBuilding);
+	std::vector<Target_t> GetTargetBuilding(CTFPlayer* pLocal, CTFWeaponBase* pWeapon);
+	bool AutoEngie(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd);
+
+	int iDoubletapTicks = 0;
+	int iDoubletapMax = 0;
+>>>>>>> Stashed changes
 
 public:
 	void Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd);
