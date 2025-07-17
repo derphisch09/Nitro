@@ -10,8 +10,11 @@ void CMovementSimulation::Store(PlayerStorage& tStorage)
 {
 	tStorage.m_PlayerData.m_vecOrigin = tStorage.m_pPlayer->m_vecOrigin();
 	tStorage.m_PlayerData.m_vecVelocity = tStorage.m_pPlayer->m_vecVelocity();
+	//tStorage.m_PlayerData.m_vecAbsVelocity = tStorage.m_pPlayer->m_vecAbsVelocity();
 	tStorage.m_PlayerData.m_vecBaseVelocity = tStorage.m_pPlayer->m_vecBaseVelocity();
 	tStorage.m_PlayerData.m_vecViewOffset = tStorage.m_pPlayer->m_vecViewOffset();
+	tStorage.m_PlayerData.m_vecMins = tStorage.m_pPlayer->m_vecMins();
+	tStorage.m_PlayerData.m_vecMaxs = tStorage.m_pPlayer->m_vecMaxs();
 	tStorage.m_PlayerData.m_hGroundEntity = tStorage.m_pPlayer->m_hGroundEntity();
 	tStorage.m_PlayerData.m_fFlags = tStorage.m_pPlayer->m_fFlags();
 	tStorage.m_PlayerData.m_flDucktime = tStorage.m_pPlayer->m_flDucktime();
@@ -33,6 +36,8 @@ void CMovementSimulation::Store(PlayerStorage& tStorage)
 	tStorage.m_PlayerData.m_flMaxspeed = tStorage.m_pPlayer->m_flMaxspeed();
 	tStorage.m_PlayerData.m_nAirDucked = tStorage.m_pPlayer->m_nAirDucked();
 	tStorage.m_PlayerData.m_bJumping = tStorage.m_pPlayer->m_bJumping();
+	tStorage.m_PlayerData.m_bAllowAutoMovement = tStorage.m_pPlayer->m_bAllowAutoMovement();
+	tStorage.m_PlayerData.m_flStepSize = tStorage.m_pPlayer->m_flStepSize();
 	tStorage.m_PlayerData.m_iAirDash = tStorage.m_pPlayer->m_iAirDash();
 	tStorage.m_PlayerData.m_flWaterJumpTime = tStorage.m_pPlayer->m_flWaterJumpTime();
 	tStorage.m_PlayerData.m_flSwimSoundTime = tStorage.m_pPlayer->m_flSwimSoundTime();
@@ -60,9 +65,14 @@ void CMovementSimulation::Store(PlayerStorage& tStorage)
 void CMovementSimulation::Reset(PlayerStorage& tStorage)
 {
 	tStorage.m_pPlayer->m_vecOrigin() = tStorage.m_PlayerData.m_vecOrigin;
+	tStorage.m_pPlayer->SetAbsOrigin(tStorage.m_PlayerData.m_vecOrigin);
 	tStorage.m_pPlayer->m_vecVelocity() = tStorage.m_PlayerData.m_vecVelocity;
+	tStorage.m_pPlayer->SetAbsVelocity(tStorage.m_PlayerData.m_vecVelocity);
+	//tStorage.m_pPlayer->m_vecAbsVelocity() = tStorage.m_PlayerData.m_vecAbsVelocity;
 	tStorage.m_pPlayer->m_vecBaseVelocity() = tStorage.m_PlayerData.m_vecBaseVelocity;
 	tStorage.m_pPlayer->m_vecViewOffset() = tStorage.m_PlayerData.m_vecViewOffset;
+	tStorage.m_pPlayer->m_vecMins() = tStorage.m_PlayerData.m_vecMins;
+	tStorage.m_pPlayer->m_vecMaxs() = tStorage.m_PlayerData.m_vecMaxs;
 	tStorage.m_pPlayer->m_hGroundEntity() = tStorage.m_PlayerData.m_hGroundEntity;
 	tStorage.m_pPlayer->m_fFlags() = tStorage.m_PlayerData.m_fFlags;
 	tStorage.m_pPlayer->m_flDucktime() = tStorage.m_PlayerData.m_flDucktime;
@@ -84,6 +94,8 @@ void CMovementSimulation::Reset(PlayerStorage& tStorage)
 	tStorage.m_pPlayer->m_flMaxspeed() = tStorage.m_PlayerData.m_flMaxspeed;
 	tStorage.m_pPlayer->m_nAirDucked() = tStorage.m_PlayerData.m_nAirDucked;
 	tStorage.m_pPlayer->m_bJumping() = tStorage.m_PlayerData.m_bJumping;
+	tStorage.m_pPlayer->m_bAllowAutoMovement() = tStorage.m_PlayerData.m_bAllowAutoMovement;
+	tStorage.m_pPlayer->m_flStepSize() = tStorage.m_PlayerData.m_flStepSize;
 	tStorage.m_pPlayer->m_iAirDash() = tStorage.m_PlayerData.m_iAirDash;
 	tStorage.m_pPlayer->m_flWaterJumpTime() = tStorage.m_PlayerData.m_flWaterJumpTime;
 	tStorage.m_pPlayer->m_flSwimSoundTime() = tStorage.m_PlayerData.m_flSwimSoundTime;
@@ -202,8 +214,6 @@ void CMovementSimulation::Store()
 	}
 }
 
-
-
 bool CMovementSimulation::Initialize(CBaseEntity* pEntity, PlayerStorage& tStorage, bool bHitchance, bool bStrafe)
 {
 	if (!pEntity || !pEntity->IsPlayer() || !pEntity->As<CTFPlayer>()->IsAlive())
@@ -234,6 +244,7 @@ bool CMovementSimulation::Initialize(CBaseEntity* pEntity, PlayerStorage& tStora
 		if (pPlayer->m_bDucked() = pPlayer->IsDucking())
 		{
 			pPlayer->m_fFlags() &= ~FL_DUCKING; // breaks origin's z if FL_DUCKING is not removed
+			//pPlayer->m_bDucked() = true; // (mins/maxs will be fine when ducking as long as m_bDucked is true)
 			pPlayer->m_flDucktime() = 0.f;
 			pPlayer->m_flDuckJumpTime() = 0.f;
 			pPlayer->m_bDucking() = false;
@@ -242,14 +253,30 @@ bool CMovementSimulation::Initialize(CBaseEntity* pEntity, PlayerStorage& tStora
 
 		if (pPlayer != H::Entities.GetLocal())
 		{
+			//pPlayer->m_flModelScale() -= 0.03125f;
+
+			if (fabsf(pPlayer->m_vecVelocity().x) < 0.01f)
+				pPlayer->m_vecVelocity().x = 0.015f;
+
+			if (fabsf(pPlayer->m_vecVelocity().y) < 0.01f)
+				pPlayer->m_vecVelocity().y = 0.015f;
+
 			pPlayer->m_vecBaseVelocity() = Vec3(); // residual basevelocity causes issues
+
 			if (pPlayer->IsOnGround())
+			{
+				pPlayer->m_vecOrigin().z += 0.03125f; // to prevent getting stuck in the ground
 				pPlayer->m_vecVelocity().z = std::min(pPlayer->m_vecVelocity().z, 0.f); // step fix
+			}
 			else
+			{
 				pPlayer->m_hGroundEntity() = nullptr; // fix for velocity.z being set to 0 even if in air
+			}
 		}
 		else if (Vars::Misc::Movement::Bunnyhop.Value && G::OriginalMove.m_iButtons & IN_JUMP)
+		{
 			tStorage.m_bBunnyHop = true;
+		}
 	}
 
 	// setup move data
@@ -324,6 +351,10 @@ bool CMovementSimulation::SetupMoveData(PlayerStorage& tStorage)
 	tStorage.m_MoveData.m_vecAbsOrigin = tStorage.m_pPlayer->m_vecOrigin();
 	tStorage.m_MoveData.m_vecVelocity = tStorage.m_pPlayer->m_vecVelocity();
 	tStorage.m_MoveData.m_flMaxSpeed = SDK::MaxSpeed(tStorage.m_pPlayer);
+
+	if (tStorage.m_PlayerData.m_fFlags & FL_DUCKING)
+		tStorage.m_MoveData.m_flMaxSpeed *= 0.3333f;
+
 	tStorage.m_MoveData.m_flClientMaxSpeed = tStorage.m_MoveData.m_flMaxSpeed;
 
 	if (!tStorage.m_MoveData.m_vecVelocity.To2D().IsZero())
@@ -717,11 +748,9 @@ void CMovementSimulation::Restore(PlayerStorage& tStorage)
 	I::Prediction->m_bFirstTimePredicted = m_bOldFirstTimePredicted;
 	I::GlobalVars->frametime = m_flOldFrametime;
 
-	/*
-	const bool bInitFailed = tStorage.m_bInitFailed, bFailed = tStorage.m_bFailed;
-	memset(&tStorage, 0, sizeof(PlayerStorage));
-	tStorage.m_bInitFailed = bInitFailed, tStorage.m_bFailed = bFailed;
-	*/
+	//const bool bInitFailed = tStorage.m_bInitFailed, bFailed = tStorage.m_bFailed;
+	//memset(&tStorage, 0, sizeof(PlayerStorage));
+	//tStorage.m_bInitFailed = bInitFailed, tStorage.m_bFailed = bFailed;
 }
 
 float CMovementSimulation::GetPredictedDelta(CBaseEntity* pEntity)
