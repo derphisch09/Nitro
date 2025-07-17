@@ -5,6 +5,8 @@
 #include "../Players/PlayerUtils.h"
 #include "../Aimbot/AutoRocketJump/AutoRocketJump.h"
 
+#include <boost/algorithm/string.hpp>
+
 void CMisc::RunPre(CTFPlayer* pLocal, CUserCmd* pCmd)
 {
 	CheatsBypass();
@@ -15,6 +17,8 @@ void CMisc::RunPre(CTFPlayer* pLocal, CUserCmd* pCmd)
 
 	AntiAFK(pLocal, pCmd);
 	InstantRespawnMVM(pLocal);
+	ExtendFreeze(pLocal);
+	InfiniteEat(pLocal, pCmd);
 
 	if (!pLocal->IsAlive() || pLocal->IsAGhost() || pLocal->m_MoveType() != MOVETYPE_WALK || pLocal->IsSwimming() || pLocal->InCond(TF_COND_SHIELD_CHARGE) || pLocal->InCond(TF_COND_HALLOWEEN_KART))
 		return;
@@ -37,9 +41,8 @@ void CMisc::RunPost(CTFPlayer* pLocal, CUserCmd* pCmd, bool pSendPacket)
 	TauntKartControl(pLocal, pCmd);
 	AutoPeek(pLocal, pCmd, true);
 	FastMovement(pLocal, pCmd);
+	AutoScoutJump(pLocal, pCmd);
 }
-
-
 
 void CMisc::AutoJump(CTFPlayer* pLocal, CUserCmd* pCmd)
 {
@@ -200,10 +203,21 @@ void CMisc::AntiAFK(CTFPlayer* pLocal, CUserCmd* pCmd)
 {
 	static Timer tTimer = {};
 
+	m_bAntiAFK = false;
+
+	static auto mp_idledealmethod = U::ConVars.FindVar("mp_idledealmethod");
+	static auto mp_idlemaxtime = U::ConVars.FindVar("mp_idlemaxtime");
+
+	const int iIdleMethod = mp_idledealmethod->GetInt();
+	const float flMaxIdleTime = mp_idlemaxtime->GetFloat();
+
 	if (pCmd->buttons & (IN_MOVELEFT | IN_MOVERIGHT | IN_FORWARD | IN_BACK) || !pLocal->IsAlive())
 		tTimer.Update();
-	else if (Vars::Misc::Automation::AntiAFK.Value && tTimer.Run(25.f))
-		pCmd->buttons |= IN_FORWARD;
+	else if (Vars::Misc::Automation::AntiAFK.Value && iIdleMethod && tTimer.Check(flMaxIdleTime * 60.f - 10.f)) // trigger 10 seconds before kick
+	{
+		pCmd->buttons |= I::GlobalVars->tickcount % 2 ? IN_FORWARD : IN_BACK;
+		m_bAntiAFK = true;
+	}
 }
 
 void CMisc::InstantRespawnMVM(CTFPlayer* pLocal)
@@ -241,8 +255,6 @@ void CMisc::WeaponSway()
 	cl_wpn_sway_interp->SetValue(bSway ? Vars::Visuals::Viewmodel::SwayInterp.Value : 0.f);
 	cl_wpn_sway_scale->SetValue(bSway ? Vars::Visuals::Viewmodel::SwayScale.Value : 0.f);
 }
-
-
 
 void CMisc::TauntKartControl(CTFPlayer* pLocal, CUserCmd* pCmd)
 {
@@ -351,6 +363,121 @@ void CMisc::FastMovement(CTFPlayer* pLocal, CUserCmd* pCmd)
 	}
 }
 
+void CMisc::FastStop(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	/*if (!pLocal->m_hGroundEntity() && pLocal->IsCharging() && pLocal->IsTaunting() && pLocal->IsStunned() && !pLocal->GetVelocity().Length2D() > 5.f)
+		return;
+
+	const int stopType = (G::ShouldShift && G::ShiftedTicks && Vars::Misc::CL_Move::AntiWarp.Value ? pLocal->OnSolid() ? 1 : 2 : 0);
+
+	static Vec3 predEndPoint = {};
+	static Vec3 currentPos{};
+
+	static int nShiftTickG = 0;
+	static int nShiftTickA = 0;
+
+	switch (stopType)
+	{
+	case 0:
+	{
+		nShiftTickG = 0;
+		nShiftTickA = 0;
+		return;
+	}
+	case 1:
+	{
+		switch (nShiftTickG)
+		{
+		case 0:
+		{
+			G::ShouldStop = true;
+			predEndPoint = pLocal->m_vecOrigin() + pLocal->m_vecVelocity();
+			nShiftTickG++;
+			break;
+		}
+
+		default:
+		{
+			nShiftTickG++;
+			break;
+		}
+		}
+
+		currentPos = pLocal->m_vecOrigin();
+		SDK::WalkTo(pCmd, pLocal, predEndPoint, currentPos, (1.f / currentPos.Dist2D(predEndPoint)));
+		return;
+	}
+	case 2:
+	{
+		switch (nShiftTickA)
+		{
+		case 0:
+		{
+			predEndPoint = pLocal->m_vecOrigin();
+			nShiftTickA++;
+			break;
+		}
+		default:
+		{
+			nShiftTickA++;
+			break;
+		}
+		}
+
+		currentPos = pLocal->m_vecOrigin();
+		SDK::WalkTo(pCmd, pLocal, predEndPoint, currentPos, 500);
+		return;
+	}
+	default:
+		return;
+	}*/
+}
+
+void CMisc::AccurateMovement(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	/*if (!Vars::Misc::Movement::AccurateMovement.Value && !pLocal->m_hGroundEntity())
+		return;
+
+	const float speed = pLocal->m_vecVelocity().Length2D();
+	constexpr float speedLimit = 10.f;
+
+	if (speed > speedLimit)
+	{
+		switch (Vars::Misc::Movement::AccurateMovement.Value)
+		{
+		case Vars::Misc::Movement::AccurateMovementEnum::Off:
+			break;
+		case Vars::Misc::Movement::AccurateMovementEnum::Legacy:
+		{
+			Vec3 direction = pLocal->m_vecVelocity().ToAngle();
+			direction.y = pCmd->viewangles.y - direction.y;
+			const Vec3 negatedDirection = direction.FromAngle() * -speed;
+			pCmd->forwardmove = negatedDirection.x;
+			pCmd->sidemove = negatedDirection.y;
+			break;
+		}
+		case Vars::Misc::Movement::AccurateMovementEnum::Instant:
+		{
+			G::ShouldStop = true;
+			break;
+		}
+		case Vars::Misc::Movement::AccurateMovementEnum::Adaptive:
+		{
+			pCmd->forwardmove = 0.0f;
+			pCmd->sidemove = 0.0f;
+			break;
+		}
+		default:
+			break;
+		}
+	}
+	else
+	{
+		pCmd->forwardmove = 0.0f;
+		pCmd->sidemove = 0.0f;
+	}*/
+}
+
 void CMisc::AutoPeek(CTFPlayer* pLocal, CUserCmd* pCmd, bool bPost)
 {
 	static bool bReturning = false;
@@ -406,12 +533,19 @@ void CMisc::EdgeJump(CTFPlayer* pLocal, CUserCmd* pCmd, bool bPost)
 		pCmd->buttons |= IN_JUMP;
 }
 
-
-
 void CMisc::Event(IGameEvent* pEvent, uint32_t uHash)
 {
 	switch (uHash)
 	{
+	case FNV1A::Hash32Const("teamplay_round_start"):
+	case FNV1A::Hash32Const("client_disconnect"):
+	case FNV1A::Hash32Const("client_beginconnect"):
+	case FNV1A::Hash32Const("game_newmap"):
+		//iLastCmdrate = -1;
+		F::Backtrack.m_flWishInterp = 0.f;
+		//G::BulletsStorage.clear();
+		G::BoxStorage.clear();
+		G::LineStorage.clear();
 	case FNV1A::Hash32Const("player_spawn"):
 		m_bPeekPlaced = false;
 	}
@@ -576,42 +710,184 @@ void CMisc::LockAchievements()
 
 bool CMisc::SteamRPC()
 {
-	/*
-	if (!Vars::Misc::Steam::EnableRPC.Value)
+	/*if (!Vars::Misc::SteamRPC::Enabled.Value)
 	{
-		if (!bSteamCleared) // stupid way to return back to normal rpc
+		if (!bSteamCleared)
 		{
-			I::SteamFriends->SetRichPresence("steam_display", ""); // this will only make it say "Team Fortress 2" until the player leaves/joins some server. its bad but its better than making 1000 checks to recreate the original
+			I::SteamFriends->SetRichPresence("steam_display", "");
 			bSteamCleared = true;
 		}
+
 		return false;
 	}
 
 	bSteamCleared = false;
 	*/
-
-
 	if (!Vars::Misc::SteamRPC::Enabled.Value)
 		return false;
 
 	I::SteamFriends->SetRichPresence("steam_display", "#TF_RichPresence_Display");
-	if (!I::EngineClient->IsInGame() && !Vars::Misc::SteamRPC::OverrideInMenu.Value)
+
+	switch (Vars::Misc::SteamRPC::State.Value)
+	{
+	case Vars::Misc::SteamRPC::StateEnum::MainMenu:
 		I::SteamFriends->SetRichPresence("state", "MainMenu");
-	else
+		break;
+	case Vars::Misc::SteamRPC::StateEnum::SearchingGeneric:
+		I::SteamFriends->SetRichPresence("state", "SearchingGeneric");
+		break;
+	case Vars::Misc::SteamRPC::StateEnum::SearchingMatchGroup:
+		I::SteamFriends->SetRichPresence("state", "SearchingMatchGroup");
+		break;
+	case Vars::Misc::SteamRPC::StateEnum::PlayingGeneric:
+		I::SteamFriends->SetRichPresence("state", "PlayingGeneric");
+		break;
+	case Vars::Misc::SteamRPC::StateEnum::LoadingGeneric:
+		I::SteamFriends->SetRichPresence("state", "LoadingGeneric");
+		break;
+	case Vars::Misc::SteamRPC::StateEnum::PlayingMatchGroup:
 	{
 		I::SteamFriends->SetRichPresence("state", "PlayingMatchGroup");
 
 		switch (Vars::Misc::SteamRPC::MatchGroup.Value)
 		{
-		case Vars::Misc::SteamRPC::MatchGroupEnum::SpecialEvent: I::SteamFriends->SetRichPresence("matchgrouploc", "SpecialEvent"); break;
-		case Vars::Misc::SteamRPC::MatchGroupEnum::MvMMannUp: I::SteamFriends->SetRichPresence("matchgrouploc", "MannUp"); break;
-		case Vars::Misc::SteamRPC::MatchGroupEnum::Competitive: I::SteamFriends->SetRichPresence("matchgrouploc", "Competitive6v6"); break;
-		case Vars::Misc::SteamRPC::MatchGroupEnum::Casual: I::SteamFriends->SetRichPresence("matchgrouploc", "Casual"); break;
-		case Vars::Misc::SteamRPC::MatchGroupEnum::MvMBootCamp: I::SteamFriends->SetRichPresence("matchgrouploc", "BootCamp"); break;
+		case Vars::Misc::SteamRPC::MatchGroupEnum::SpecialEvent:
+			I::SteamFriends->SetRichPresence("matchgrouploc", "SpecialEvent");
+			break;
+		case Vars::Misc::SteamRPC::MatchGroupEnum::MvMMannUp:
+			I::SteamFriends->SetRichPresence("matchgrouploc", "MannUp");
+			break;
+		case Vars::Misc::SteamRPC::MatchGroupEnum::Competitive:
+			I::SteamFriends->SetRichPresence("matchgrouploc", "Competitive6v6");
+			break;
+		case Vars::Misc::SteamRPC::MatchGroupEnum::Casual:
+			I::SteamFriends->SetRichPresence("matchgrouploc", "Casual");
+			break;
+		case Vars::Misc::SteamRPC::MatchGroupEnum::MvMBootCamp:
+			I::SteamFriends->SetRichPresence("matchgrouploc", "BootCamp");
+			break;
+		default:
+			I::SteamFriends->SetRichPresence("matchgrouploc", "SpecialEvent");
+			break;
 		}
+
+		I::SteamFriends->SetRichPresence("currentmap", Vars::Misc::SteamRPC::MapText.Value.c_str());
+		I::SteamFriends->SetRichPresence("steam_player_group_size", std::to_string(Vars::Misc::SteamRPC::GroupSize.Value).c_str());
+
+		break;
 	}
-	I::SteamFriends->SetRichPresence("currentmap", Vars::Misc::SteamRPC::MapText.Value.c_str());
-	I::SteamFriends->SetRichPresence("steam_player_group_size", std::to_string(Vars::Misc::SteamRPC::GroupSize.Value).c_str());
+	case Vars::Misc::SteamRPC::StateEnum::LoadingMatchGroup:
+		I::SteamFriends->SetRichPresence("state", "LoadingMatchGroup");
+		I::SteamFriends->SetRichPresence("steam_player_group_size", std::to_string(Vars::Misc::SteamRPC::GroupSize.Value).c_str());
+		break;
+	case Vars::Misc::SteamRPC::StateEnum::PlayingCommunity:
+		I::SteamFriends->SetRichPresence("state", "PlayingCommunity");
+		break;
+	case Vars::Misc::SteamRPC::StateEnum::LoadingCommunity:
+		I::SteamFriends->SetRichPresence("state", "LoadingCommunity");
+		break;
+	default:
+		I::SteamFriends->SetRichPresence("state", "MainMenu");
+		break;
+	}
 
 	return true;
+}
+
+const static std::vector<const char*> vFootsteps = { "footsteps", "flesh_impact_hard", "body_medium_impact_soft", "glass_sheet_step", "rubber_tire_impact_soft", "plastic_box_impact_soft", "plastic_barrel_impact_soft", "cardboard_box_impact_soft" };
+const static std::vector<const char*> vNoisemaker = { "items\\halloween", "items\\football_manager", "items\\japan_fundraiser", "items\\samurai\\tf_samurai_noisemaker", "items\\summer", "misc\\happy_birthday_tf", "misc\\jingle_bells" };
+const static std::vector<const char*> vFryingPan = { "pan_" };
+const static std::vector<const char*> vWater = { "ambient_mp3\\water\\water_splash", "slosh", "wade" };
+
+bool CMisc::ShouldBlockSound(const char* pSound)
+{
+	if (!pSound)
+		return false;
+
+	std::string sSound = pSound;
+	boost::algorithm::to_lower(sSound);
+
+	if (Vars::Misc::Sound::Block.Value)
+	{
+		auto CheckSound = [&](int iFlag, const std::vector<const char*>& vSounds)
+		{
+			if (Vars::Misc::Sound::Block.Value & iFlag)
+			{
+				for (auto& sNoise : vSounds)
+				{
+					if (sSound.find(sNoise) != std::string::npos)
+						return true;
+				}
+			}
+
+			return false;
+		};
+
+		if (CheckSound(Vars::Misc::Sound::BlockEnum::Footsteps, vFootsteps))
+			return true;
+
+		if (CheckSound(Vars::Misc::Sound::BlockEnum::Noisemaker, vNoisemaker))
+			return true;
+
+		if (CheckSound(Vars::Misc::Sound::BlockEnum::FryingPan, vFryingPan))
+			return true;
+
+		if (CheckSound(Vars::Misc::Sound::BlockEnum::Water, vWater))
+			return true;
+	}
+
+	if (FNV1A::Hash32(pSound) == FNV1A::Hash32Const("Physics.WaterSplash"))
+		return true;
+
+	return false;
+}
+
+void CMisc::ExtendFreeze(CTFPlayer* pLocal)
+{
+	if (Vars::Misc::Exploits::ExtendFreeze.Value && I::EngineClient->IsInGame() && !pLocal->IsAlive())
+	{
+		static Timer tTimer = {};
+
+		if (tTimer.Run(2000))
+		{
+			I::EngineClient->ClientCmd_Unrestricted("extendfreeze");
+		}
+	}
+}
+
+void CMisc::InfiniteEat(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	if (!pLocal->IsAlive() || !Vars::Misc::Exploits::InfiniteEat.Value)
+		return;
+
+	auto pWeapon = pLocal->m_hActiveWeapon().Get()->As<CTFWeaponBase>();
+	const int iWeaponID = pWeapon->GetWeaponID();
+
+	if (iWeaponID != TF_WEAPON_LUNCHBOX) 
+		return;
+
+	pCmd->buttons |= IN_ATTACK;
+
+	static float flLastSendTime = I::GlobalVars->curtime;
+
+	if (fabsf(I::GlobalVars->curtime - flLastSendTime) > .5f) 
+	{
+		I::EngineClient->ClientCmd_Unrestricted("taunt");
+		flLastSendTime = I::GlobalVars->curtime;
+	}
+}
+
+void CMisc::AutoScoutJump(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	if (!Vars::Misc::Movement::AutoScoutJump.Value || !G::CanPrimaryAttack)
+		return;
+
+	if (pLocal->m_iClass() != TF_CLASS_SCOUT || pLocal->IsDucking())
+		return;
+
+	pCmd->buttons |= IN_ATTACK | IN_JUMP | IN_FORWARD;
+	pCmd->forwardmove = 10.f;
+	pCmd->viewangles.x = 25.f;
+
+	G::SilentAngles = true;
 }
