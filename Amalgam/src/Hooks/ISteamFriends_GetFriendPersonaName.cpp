@@ -4,8 +4,7 @@
 
 MAKE_SIGNATURE(GetPlayerNameForSteamID_GetFriendPersonaName_Call, "client.dll", "41 B9 ? ? ? ? 44 8B C3 48 8B C8", 0x0);
 
-MAKE_HOOK(ISteamFriends_GetFriendPersonaName, U::Memory.GetVirtual(I::SteamFriends, 7), const char*,
-	void* rcx, CSteamID steamIDFriend)
+MAKE_HOOK(ISteamFriends_GetFriendPersonaName, U::Memory.GetVirtual(I::SteamFriends, 7), const char*, void* rcx, CSteamID steamIDFriend)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::ISteamFriends_GetFriendPersonaName[DEFAULT_BIND])

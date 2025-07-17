@@ -6,14 +6,12 @@
 #include "../Features/Misc/AutoVote/AutoVote.h"
 #include "../Features/Aimbot/AutoHeal/AutoHeal.h"
 
-//#define DEBUG_VISUALS
 #ifdef DEBUG_VISUALS
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #endif
 
-MAKE_HOOK(IBaseClientDLL_DispatchUserMessage, U::Memory.GetVirtual(I::BaseClientDLL, 36), bool,
-	void* rcx, UserMessageType type, bf_read& msgData)
+MAKE_HOOK(IBaseClientDLL_DispatchUserMessage, U::Memory.GetVirtual(I::BaseClientDLL, 36), bool, void* rcx, UserMessageType type, bf_read& msgData)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::IBaseClientDLL_DispatchUserMessage[DEFAULT_BIND])
@@ -121,7 +119,9 @@ MAKE_HOOK(IBaseClientDLL_DispatchUserMessage, U::Memory.GetVirtual(I::BaseClient
 	case PlayerTauntSoundLoopEnd:
 		return Vars::Visuals::Removals::Taunts.Value ? true : CALL_ORIGINAL(rcx, type, msgData);
 	case Shake:
+		//return Vars::Visuals::Removals::Shake.Value ? true : CALL_ORIGINAL(rcx, type, msgData);
 	case Fade:
+		//return Vars::Visuals::Removals::Fade.Value ? true : CALL_ORIGINAL(rcx, type, msgData);
 	case Rumble:
 		return Vars::Visuals::Removals::ScreenEffects.Value ? true : CALL_ORIGINAL(rcx, type, msgData);
 	}

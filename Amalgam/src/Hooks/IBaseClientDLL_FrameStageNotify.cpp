@@ -12,9 +12,9 @@
 #include "../Features/Visuals/Glow/Glow.h"
 #include "../Features/Spectate/Spectate.h"
 #include "../Features/Binds/Binds.h"
+#include "../Features/Visuals/Precipitation/Precipitation.h"
 
-MAKE_HOOK(IBaseClientDLL_FrameStageNotify, U::Memory.GetVirtual(I::BaseClientDLL, 35), void,
-	void* rcx, ClientFrameStage_t curStage)
+MAKE_HOOK(IBaseClientDLL_FrameStageNotify, U::Memory.GetVirtual(I::BaseClientDLL, 35), void, void* rcx, ClientFrameStage_t curStage)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::IBaseClientDLL_FrameStageNotify[DEFAULT_BIND])
@@ -56,7 +56,11 @@ MAKE_HOOK(IBaseClientDLL_FrameStageNotify, U::Memory.GetVirtual(I::BaseClientDLL
 		F::Spectate.NetUpdateEnd(pLocal);
 
 		F::Visuals.Modulate();
+<<<<<<< Updated upstream
 		F::Visuals.DrawHitboxes(1);
+=======
+		F::Precipitation.Update();
+>>>>>>> Stashed changes
 		break;
 	}
 	case FRAME_RENDER_START:

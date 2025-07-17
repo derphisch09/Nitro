@@ -3,15 +3,16 @@
 #include "../Features/Players/PlayerUtils.h"
 
 MAKE_SIGNATURE(CTFPlayerPanel_GetTeam, "client.dll", "8B 91 ? ? ? ? 83 FA ? 74 ? 48 8B 05", 0x0);
-MAKE_SIGNATURE(CTFTeamStatusPlayerPanel_Update, "client.dll", "40 56 57 48 83 EC ? 48 83 3D", 0x0);
-MAKE_SIGNATURE(vgui_Panel_SetBgColor, "client.dll", "89 91 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC 48 8B 41", 0x0);
 MAKE_SIGNATURE(CTFTeamStatusPlayerPanel_Update_GetTeam_Call, "client.dll", "8B 9F ? ? ? ? 40 32 F6", 0x0);
-MAKE_SIGNATURE(CTFTeamStatusPlayerPanel_Update_SetBgColor_Call, "client.dll", "48 8B 8F ? ? ? ? 4C 8B 6C 24 ? 48 85 C9 0F 84 ? ? ? ? 40 38 B7", 0x0);
 
+<<<<<<< Updated upstream
 static int iPlayerIndex;
 
 MAKE_HOOK(CTFPlayerPanel_GetTeam, S::CTFPlayerPanel_GetTeam(), int,
 	void* rcx)
+=======
+MAKE_HOOK(CTFPlayerPanel_GetTeam, S::CTFPlayerPanel_GetTeam(), int, void* rcx)
+>>>>>>> Stashed changes
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CTFPlayerPanel_GetTeam[DEFAULT_BIND])
@@ -28,6 +29,7 @@ MAKE_HOOK(CTFPlayerPanel_GetTeam, S::CTFPlayerPanel_GetTeam(), int,
 	}
 
 	return CALL_ORIGINAL(rcx);
+<<<<<<< Updated upstream
 }
 
 MAKE_HOOK(CTFTeamStatusPlayerPanel_Update, S::CTFTeamStatusPlayerPanel_Update(), bool,
@@ -67,4 +69,6 @@ MAKE_HOOK(vgui_Panel_SetBgColor, S::vgui_Panel_SetBgColor(), void,
 	}
 
 	CALL_ORIGINAL(rcx, color);
+=======
+>>>>>>> Stashed changes
 }

@@ -2,8 +2,7 @@
 
 MAKE_SIGNATURE(CViewRender_DrawUnderwaterOverlay, "client.dll", "4C 8B DC 41 56 48 81 EC ? ? ? ? 4C 8B B1", 0x0);
 
-MAKE_HOOK(CViewRender_DrawUnderwaterOverlay, S::CViewRender_DrawUnderwaterOverlay(), void,
-	void* rcx)
+MAKE_HOOK(CViewRender_DrawUnderwaterOverlay, S::CViewRender_DrawUnderwaterOverlay(), void, void* rcx)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CViewRender_DrawUnderwaterOverlay[DEFAULT_BIND])

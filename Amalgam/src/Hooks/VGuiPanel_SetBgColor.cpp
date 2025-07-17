@@ -1,0 +1,32 @@
+#include "../SDK/SDK.h"
+
+MAKE_SIGNATURE(VGuiPanel_SetBgColor, "client.dll", "89 91 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC 48 8B 41", 0x0);
+MAKE_SIGNATURE(CTFTeamStatusPlayerPanel_Update_SetBgColor_Call, "client.dll", "48 8B 8F ? ? ? ? 4C 8B 6C 24 ? 48 85 C9 0F 84 ? ? ? ? 40 38 B7", 0x0);
+
+MAKE_HOOK(VGuiPanel_SetBgColor, S::VGuiPanel_SetBgColor(), void, void* rcx, Color_t color)
+{
+#ifdef DEBUG_HOOKS
+	if (!Vars::Hooks::CTFPlayerPanel_GetTeam[DEFAULT_BIND])
+		return CALL_ORIGINAL(rcx, color);
+#endif
+
+	static const auto dwDesired = S::CTFTeamStatusPlayerPanel_Update_SetBgColor_Call();
+	const auto dwRetAddr = uintptr_t(_ReturnAddress());
+
+	if (dwRetAddr == dwDesired && Vars::Visuals::UI::ScoreboardColors.Value)
+	{
+		Color_t tColor = H::Color.GetScoreboardColor(G::PlayerIndex);
+
+		if (tColor.a)
+		{
+			auto pResource = H::Entities.GetPR();
+
+			if (pResource && !pResource->m_bAlive(G::PlayerIndex))
+				tColor = tColor.Lerp({ 127, 127, 127, tColor.a }, 0.5f);
+
+			color = tColor;
+		}
+	}
+
+	CALL_ORIGINAL(rcx, color);
+}

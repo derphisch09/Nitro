@@ -38,8 +38,7 @@ struct TraceInfo_t
 static int iOriginalMask = false;
 static bool bOriginalStartSolid = false;
 
-MAKE_HOOK(IEngineTrace_SetTraceEntity, U::Memory.GetVirtual(I::EngineTrace, 20), void,
-	void* rcx, ICollideable* pCollideable, trace_t* pTrace)
+MAKE_HOOK(IEngineTrace_SetTraceEntity, U::Memory.GetVirtual(I::EngineTrace, 20), void, void* rcx, ICollideable* pCollideable, trace_t* pTrace)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::IEngineTrace_SetTraceEntity[DEFAULT_BIND])
@@ -55,8 +54,7 @@ MAKE_HOOK(IEngineTrace_SetTraceEntity, U::Memory.GetVirtual(I::EngineTrace, 20),
 		pTrace->startsolid = false;
 }
 
-MAKE_HOOK(CM_BoxTrace, S::CM_BoxTrace(), void,
-	const Ray_t& ray, int headnode, int brushmask, bool computeEndpt, trace_t& tr)
+MAKE_HOOK(CM_BoxTrace, S::CM_BoxTrace(), void, const Ray_t& ray, int headnode, int brushmask, bool computeEndpt, trace_t& tr)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::IEngineTrace_SetTraceEntity[DEFAULT_BIND])

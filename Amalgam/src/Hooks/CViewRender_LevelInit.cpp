@@ -9,8 +9,7 @@
 #include "../Features/Resolver/Resolver.h"
 #include "../Features/Spectate/Spectate.h"
 
-MAKE_HOOK(CViewRender_LevelInit, U::Memory.GetVirtual(I::ViewRender, 1), void,
-	void* rcx)
+MAKE_HOOK(CViewRender_LevelInit, U::Memory.GetVirtual(I::ViewRender, 1), void, void* rcx)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CViewRender_LevelInit[DEFAULT_BIND])
@@ -25,6 +24,7 @@ MAKE_HOOK(CViewRender_LevelInit, U::Memory.GetVirtual(I::ViewRender, 1), void,
 	F::NoSpreadHitscan.Reset();
 	F::CheaterDetection.Reset();
 	F::Resolver.Reset();
+	//F::GameObjectiveController.Reset();
 	F::Spectate.m_iIntendedTarget = -1;
 
 	CALL_ORIGINAL(rcx);

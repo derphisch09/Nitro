@@ -14,11 +14,10 @@ static int iPlayerIndex;
 static uint32_t uFriendsID;
 static std::string sPlayerName;
 
-MAKE_HOOK(CVoiceStatus_IsPlayerBlocked, S::CVoiceStatus_IsPlayerBlocked(), bool,
-    void* rcx, int playerIndex)
+MAKE_HOOK(CVoiceStatus_IsPlayerBlocked, S::CVoiceStatus_IsPlayerBlocked(), bool, void* rcx, int playerIndex)
 {
 #ifdef DEBUG_HOOKS
-    if (!Vars::Hooks::VGuiMenuBuilder_AddMenuItem[DEFAULT_BIND])
+    if (!Vars::Hooks::CVoiceStatus_IsPlayerBlocked[DEFAULT_BIND])
         return CALL_ORIGINAL(rcx, playerIndex);
 #endif
 
@@ -31,8 +30,7 @@ MAKE_HOOK(CVoiceStatus_IsPlayerBlocked, S::CVoiceStatus_IsPlayerBlocked(), bool,
     return CALL_ORIGINAL(rcx, playerIndex);
 }
 
-MAKE_HOOK(VGuiMenuBuilder_AddMenuItem, S::VGuiMenuBuilder_AddMenuItem(), void*,
-    void* rcx, const char* pszButtonText, const char* pszCommand, const char* pszCategoryName)
+MAKE_HOOK(VGuiMenuBuilder_AddMenuItem, S::VGuiMenuBuilder_AddMenuItem(), void*, void* rcx, const char* pszButtonText, const char* pszCommand, const char* pszCategoryName)
 {
 #ifdef DEBUG_HOOKS
     if (!Vars::Hooks::VGuiMenuBuilder_AddMenuItem[DEFAULT_BIND])
@@ -74,11 +72,10 @@ MAKE_HOOK(VGuiMenuBuilder_AddMenuItem, S::VGuiMenuBuilder_AddMenuItem(), void*,
     return CALL_ORIGINAL(rcx, pszButtonText, pszCommand, pszCategoryName);
 }
 
-MAKE_HOOK(CTFClientScoreBoardDialog_OnCommand, S::CTFClientScoreBoardDialog_OnCommand(), void,
-    void* rcx, const char* command)
+MAKE_HOOK(CTFClientScoreBoardDialog_OnCommand, S::CTFClientScoreBoardDialog_OnCommand(), void, void* rcx, const char* command)
 {
 #ifdef DEBUG_HOOKS
-    if (!Vars::Hooks::VGuiMenuBuilder_AddMenuItem[DEFAULT_BIND])
+    if (!Vars::Hooks::CTFClientScoreBoardDialog_OnCommand[DEFAULT_BIND])
         return CALL_ORIGINAL(rcx, command);
 #endif
 

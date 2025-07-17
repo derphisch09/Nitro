@@ -2,8 +2,7 @@
 
 MAKE_SIGNATURE(CTFRagdoll_CreateTFRagdoll, "client.dll", "48 89 4C 24 ? 55 53 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 8B 91", 0x0);
 
-MAKE_HOOK(CTFRagdoll_CreateTFRagdoll, S::CTFRagdoll_CreateTFRagdoll(), void,
-	void* rcx)
+MAKE_HOOK(CTFRagdoll_CreateTFRagdoll, S::CTFRagdoll_CreateTFRagdoll(), void, void* rcx)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CTFRagdoll_CreateTFRagdoll[DEFAULT_BIND])
@@ -17,6 +16,7 @@ MAKE_HOOK(CTFRagdoll_CreateTFRagdoll, S::CTFRagdoll_CreateTFRagdoll(), void,
 		return CALL_ORIGINAL(rcx);
 
 	auto pRagdoll = reinterpret_cast<CTFRagdoll*>(rcx);
+
 	pRagdoll->m_bGib() = false;
 	pRagdoll->m_bBurning() = Vars::Visuals::Effects::RagdollEffects.Value & Vars::Visuals::Effects::RagdollEffectsEnum::Burning;
 	pRagdoll->m_bElectrocuted() = Vars::Visuals::Effects::RagdollEffects.Value & Vars::Visuals::Effects::RagdollEffectsEnum::Electrocuted;

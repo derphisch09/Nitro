@@ -15,8 +15,7 @@
 #include "../Features/Visuals/Notifications/Notifications.h"
 #include "../Features/Aimbot/AutoHeal/AutoHeal.h"
 
-MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void,
-	void* rcx, int iMode)
+MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void, void* rcx, int iMode)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::IEngineVGui_Paint[DEFAULT_BIND])
@@ -30,7 +29,9 @@ MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void,
 	{
 		H::Draw.UpdateScreenSize();
 		H::Draw.UpdateW2SMatrix();
+
 		H::Draw.Start(true);
+
 		if (auto pLocal = H::Entities.GetLocal())
 		{
 			F::CameraWindow.Draw();

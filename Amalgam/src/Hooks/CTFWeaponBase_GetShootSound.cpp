@@ -2,8 +2,7 @@
 
 MAKE_SIGNATURE(CTFWeaponBase_GetShootSound, "client.dll", "40 55 56 41 56 48 83 EC ? 80 B9", 0x0);
 
-MAKE_HOOK(CTFWeaponBase_GetShootSound, S::CTFWeaponBase_GetShootSound(), const char*,
-	void* rcx, int iIndex)
+MAKE_HOOK(CTFWeaponBase_GetShootSound, S::CTFWeaponBase_GetShootSound(), const char*, void* rcx, int iIndex)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CTFWeaponBase_GetShootSound[DEFAULT_BIND])
@@ -15,10 +14,9 @@ MAKE_HOOK(CTFWeaponBase_GetShootSound, S::CTFWeaponBase_GetShootSound(), const c
 		auto pWeapon = reinterpret_cast<CBaseCombatWeapon*>(rcx);
 		auto pOwner = pWeapon ? I::ClientEntityList->GetClientEntityFromHandle(pWeapon->m_hOwnerEntity()) : nullptr;
 		auto pLocal = H::Entities.GetLocal();
+
 		if (pWeapon && pOwner == pLocal)
 		{
-			// credits: KGB
-
 			int nOldTeam = pWeapon->m_iTeamNum();
 			pWeapon->m_iTeamNum() = TF_TEAM_COUNT;
 			auto sReturn = CALL_ORIGINAL(rcx, iIndex);

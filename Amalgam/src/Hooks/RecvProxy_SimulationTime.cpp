@@ -9,8 +9,7 @@ static int GetNetworkBase(int nTick, int nEntity)
 	return nBaseTick;
 }
 
-MAKE_HOOK(RecvProxy_SimulationTime, S::RecvProxy_SimulationTime(), void,
-	const CRecvProxyData* pData, void* pStruct, void* pOut)
+MAKE_HOOK(RecvProxy_SimulationTime, S::RecvProxy_SimulationTime(), void, const CRecvProxyData* pData, void* pStruct, void* pOut)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::RecvProxy_SimulationTime[DEFAULT_BIND])
@@ -18,18 +17,21 @@ MAKE_HOOK(RecvProxy_SimulationTime, S::RecvProxy_SimulationTime(), void,
 #endif
 
 	auto pEntity = reinterpret_cast<CBaseEntity*>(pStruct);
+
 	if (!pEntity || !pEntity->IsPlayer() || pEntity->entindex() == I::EngineClient->GetLocalPlayer())
 		return CALL_ORIGINAL(pData, pStruct, pOut);
 
-	if (!pData->m_Value.m_Int) // fix setting invalid simtime every 100 ticks if choking
+	if (!pData->m_Value.m_Int) 
 		return;
 
 	int addt = pData->m_Value.m_Int;
 	int t = GetNetworkBase(I::GlobalVars->tickcount, pEntity->entindex());
+
 	t += addt;
 
 	while (t < I::GlobalVars->tickcount - 127)
 		t += 256;
+
 	while (t > I::GlobalVars->tickcount + 127)
 		t -= 256;
 

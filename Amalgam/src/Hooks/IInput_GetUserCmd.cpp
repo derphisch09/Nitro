@@ -1,7 +1,6 @@
 #include "../SDK/SDK.h"
 
-MAKE_HOOK(IInput_GetUserCmd, U::Memory.GetVirtual(I::Input, 8), CUserCmd*,
-	void* rcx, int sequence_number)
+MAKE_HOOK(IInput_GetUserCmd, U::Memory.GetVirtual(I::Input, 8), CUserCmd*, void* rcx, int sequence_number)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::IInput_GetUserCmd[DEFAULT_BIND])
