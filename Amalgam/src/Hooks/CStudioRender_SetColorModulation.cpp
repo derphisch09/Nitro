@@ -1,7 +1,6 @@
 #include "../SDK/SDK.h"
 
-MAKE_HOOK(CStudioRender_SetColorModulation, U::Memory.GetVirtual(I::StudioRender, 27), void,
-	void* rcx, const float* pColor)
+MAKE_HOOK(CStudioRender_SetColorModulation, U::Memory.GetVirtual(I::StudioRender, 27), void, void* rcx, const float* pColor)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CStudioRender_SetColorModulation[DEFAULT_BIND])

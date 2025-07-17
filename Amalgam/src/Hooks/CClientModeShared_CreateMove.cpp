@@ -30,8 +30,7 @@ struct CmdHistory_t
 
 MAKE_SIGNATURE(IHasGenericMeter_GetMeterMultiplier, "client.dll", "F3 0F 10 81 ? ? ? ? C3 CC CC CC CC CC CC CC 48 85 D2", 0x0);
 
-MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared, 21), bool,
-	CClientModeShared* rcx, float flInputSampleTime, CUserCmd* pCmd)
+MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared, 21), bool, CClientModeShared* rcx, float flInputSampleTime, CUserCmd* pCmd)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CClientModeShared_CreateMove[DEFAULT_BIND])
@@ -46,17 +45,23 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 	}
 
 	const bool bReturn = CALL_ORIGINAL(rcx, flInputSampleTime, pCmd);
-	if (!pCmd || !pCmd->command_number)
+
+	if (!pCmd || !pCmd->command_number || G::Unload)
 		return bReturn;
 
 	bool* pSendPacket = reinterpret_cast<bool*>(uintptr_t(_AddressOfReturnAddress()) + 0x128);
+
+	Vec3 vOldAngles = pCmd->viewangles;
+	float flOldSide = pCmd->sidemove;
+	float flOldForward = pCmd->forwardmove;
 
 	G::PSilentAngles = G::SilentAngles = G::Attacking = G::Throwing = false;
 	G::LastUserCmd = G::CurrentUserCmd ? G::CurrentUserCmd : pCmd;
 	G::CurrentUserCmd = pCmd;
 
-	I::Prediction->Update(I::ClientState->m_nDeltaTick, I::ClientState->m_nDeltaTick > 0, I::ClientState->last_command_ack, I::ClientState->lastoutgoingcommand + I::ClientState->chokedcommands);
+	F::EnginePrediction.Update();
 
+<<<<<<< Updated upstream
 	if (!Vars::Misc::Game::AntiCheatCompatibility.Value)
 	{	// correct tick_count for fakeinterp / nointerp
 		pCmd->tick_count += TIME_TO_TICKS(F::Backtrack.GetFakeInterp());
@@ -65,9 +70,17 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 	}
 	if (G::OriginalMove.m_iButtons & IN_DUCK)
 		pCmd->buttons |= IN_DUCK; // lol
+=======
+	// correct tick_count for fakeinterp / nointerp
+	pCmd->tick_count += TICKS_TO_TIME(F::Backtrack.GetFakeInterp()) - (Vars::Visuals::Removals::Interpolation.Value ? 0 : TICKS_TO_TIME(G::Lerp));
+
+	if (G::OriginalMove.m_iButtons & IN_DUCK)
+		pCmd->buttons |= IN_DUCK;
+>>>>>>> Stashed changes
 
 	auto pLocal = H::Entities.GetLocal();
 	auto pWeapon = H::Entities.GetWeapon();
+
 	if (pLocal && pWeapon)
 	{	// update weapon info
 		G::CanPrimaryAttack = G::CanSecondaryAttack = G::Reloading = false;
@@ -81,6 +94,40 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 			if (iNewItemDefinitionIndex != iOldItemDefinitionIndex || !bCanAttack || !pWeapon->m_iClip1())
 				F::Ticks.m_iWait = 1;
 		}
+
+		for (int i = 0; i <= SLOT_MELEE; i++)
+		{
+			auto pWeaponInSlot = pLocal->GetWeaponFromSlot(i);
+
+			if (pWeaponInSlot)
+			{
+				G::SavedDefinitionIndexes[i] = pWeaponInSlot->m_iItemDefinitionIndex();
+				G::SavedWeaponIds[i] = pWeaponInSlot->GetWeaponID();
+
+				if (i != SLOT_MELEE)
+					G::AmmoInSlot[i] = pWeaponInSlot->m_iClip1();
+			}
+		}
+
+		switch (SDK::GetRoundState())
+		{
+		case GR_STATE_TEAM_WIN:
+			if (pLocal->m_iTeamNum() != SDK::GetWinningTeam())
+				bCanAttack = false;
+			break;
+		case GR_STATE_BETWEEN_RNDS:
+			if (pLocal->m_fFlags() & FL_FROZEN)
+				bCanAttack = false;
+			break;
+		case GR_STATE_GAME_OVER:
+			if (pLocal->m_fFlags() & FL_FROZEN || pLocal->m_iTeamNum() != SDK::GetWinningTeam())
+				bCanAttack = false;
+			break;
+		}
+
+		if (pLocal->InCond(TF_COND_STUNNED) && pLocal->m_iStunFlags() & (TF_STUN_CONTROLS | TF_STUN_LOSER_STATE))
+			bCanAttack = false;
+
 		if (bCanAttack)
 		{
 			G::CanPrimaryAttack = pWeapon->CanPrimaryAttack();
@@ -169,9 +216,27 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 	// run features
 	F::Spectate.CreateMove(pLocal, pCmd);
 	F::Misc.RunPre(pLocal, pCmd);
+	//F::GameObjectiveController.Update();
 
 	F::EnginePrediction.Start(pLocal, pCmd);
+<<<<<<< Updated upstream
 	F::Aimbot.Run(pLocal, pWeapon, pCmd);
+=======
+	{
+		/*if (Vars::Misc::Movement::ChokeOnBunnyhop.Value && Vars::Misc::Movement::Bunnyhop.Value)
+		{
+			if (CTFPlayer* local = H::Entities.GetLocal())
+			{
+				if ((local->m_fFlags() & FL_ONGROUND) && !(F::EnginePrediction.flags & FL_ONGROUND))
+					*pSendPacket = false;
+			}
+		}*/
+
+		F::Aimbot.Run(pLocal, pWeapon, pCmd);
+	}
+	F::EnginePrediction.End(pLocal, pCmd);
+
+>>>>>>> Stashed changes
 	F::CritHack.Run(pLocal, pWeapon, pCmd);
 	F::NoSpread.Run(pLocal, pWeapon, pCmd);
 	F::Resolver.CreateMove(pLocal);
@@ -183,12 +248,28 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 
 	{
 		static bool bWasSet = false;
-		const bool bCanChoke = F::Ticks.CanChoke(); // failsafe
+		const bool bCanChoke = F::Ticks.CanChoke();
+
 		if (G::PSilentAngles && bCanChoke)
-			*pSendPacket = false, bWasSet = true;
+		{
+			*pSendPacket = false;
+			bWasSet = true;
+		}
 		else if (bWasSet || !bCanChoke)
-			*pSendPacket = true, bWasSet = false;
+		{
+			*pSendPacket = true; 
+			pCmd->viewangles = vOldAngles;
+			pCmd->sidemove = flOldSide;
+			pCmd->forwardmove = flOldForward;
+			bWasSet = false;
+		}
 	}
+
+	//if (I::ClientState->chokedcommands > 22)
+	//{
+	//	*pSendPacket = true;
+	//}
+
 	F::Ticks.CreateMove(pLocal, pCmd, pSendPacket);
 	F::AntiAim.Run(pLocal, pWeapon, pCmd, *pSendPacket);
 
@@ -196,30 +277,47 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 	{
 		static std::vector<Vec3> vAngles = {};
 		vAngles.push_back(pCmd->viewangles);
+<<<<<<< Updated upstream
 		auto pAnimState = pLocal->m_PlayerAnimState();
+=======
+		auto pAnimState = pLocal->GetAnimState();
+
+>>>>>>> Stashed changes
 		if (*pSendPacket && pAnimState)
 		{
 			float flOldFrametime = I::GlobalVars->frametime;
 			float flOldCurtime = I::GlobalVars->curtime;
+
 			I::GlobalVars->frametime = TICK_INTERVAL;
 			I::GlobalVars->curtime = TICKS_TO_TIME(pLocal->m_nTickBase());
+
 			for (auto& vAngle : vAngles)
 			{
 				if (pLocal->IsTaunting() && pLocal->m_bAllowMoveDuringTaunt())
 					pLocal->m_flTauntYaw() = vAngle.y;
+<<<<<<< Updated upstream
 				pAnimState->Update(pAnimState->m_flEyeYaw = vAngle.y, vAngle.x);
+=======
+
+				pAnimState->m_flEyeYaw = vAngle.y;
+				pAnimState->Update(vAngle.y, vAngle.x);
+
+>>>>>>> Stashed changes
 				pLocal->FrameAdvance(TICK_INTERVAL);
 			}
+
 			I::GlobalVars->frametime = flOldFrametime;
 			I::GlobalVars->curtime = flOldCurtime;
-			vAngles.clear();
 
+			vAngles.clear();
 			F::FakeAngle.Run(pLocal);
 		}
 	}
 
 	G::Choking = !*pSendPacket;
+	G::ViewAngles = pCmd->viewangles;
 	G::LastUserCmd = pCmd;
+
 	F::NoSpreadHitscan.AskForPlayerPerf();
 
 	if (Vars::Misc::Game::AntiCheatCompatibility.Value)
@@ -228,6 +326,7 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 
 		static std::deque<CmdHistory_t> vHistory;
 		vHistory.emplace_front(pCmd->viewangles, pCmd->buttons & IN_ATTACK, pCmd->buttons & IN_ATTACK2, *pSendPacket);
+
 		if (vHistory.size() > 5)
 			vHistory.pop_back();
 
@@ -237,9 +336,10 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 		// prevent trigger checks, though this shouldn't happen ordinarily
 		if (!vHistory[0].m_bAttack1 && vHistory[1].m_bAttack1 && !vHistory[2].m_bAttack1)
 			pCmd->buttons |= IN_ATTACK;
+
 		if (!vHistory[0].m_bAttack2 && vHistory[1].m_bAttack2 && !vHistory[2].m_bAttack2)
 			pCmd->buttons |= IN_ATTACK2;
-		
+
 		// don't care if we are actually attacking or not, a miss is less important than a detection
 		if (vHistory[0].m_bAttack1 || vHistory[1].m_bAttack1 || vHistory[2].m_bAttack1)
 		{
@@ -248,10 +348,13 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 				&& Math::CalcFov(vHistory[0].m_vAngle, vHistory[2].m_vAngle) < REAL_EPSILON)
 			{
 				pCmd->viewangles = vHistory[1].m_vAngle.LerpAngle(vHistory[0].m_vAngle, 0.5f);
+
 				if (Math::CalcFov(pCmd->viewangles, vHistory[2].m_vAngle) < REAL_EPSILON)
 					pCmd->viewangles = vHistory[0].m_vAngle + Vec3(0.f, REAL_EPSILON * 2);
+
 				vHistory[0].m_vAngle = pCmd->viewangles;
 				vHistory[0].m_bSendingPacket = *pSendPacket = vHistory[1].m_bSendingPacket;
+
 				G::Choking = !*pSendPacket;
 			}
 
@@ -264,15 +367,17 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 				float flDelta34 = Math::CalcFov(vHistory[3].m_vAngle, vHistory[4].m_vAngle);
 
 				if ((
-						flDelta12 > SNAP_SIZE_EPSILON && flDelta23 < SNAP_NOISE_EPSILON && vHistory[2].m_vAngle != vHistory[3].m_vAngle
-					 || flDelta23 > SNAP_SIZE_EPSILON && flDelta12 < SNAP_NOISE_EPSILON && vHistory[1].m_vAngle != vHistory[2].m_vAngle
+					flDelta12 > SNAP_SIZE_EPSILON && flDelta23 < SNAP_NOISE_EPSILON && vHistory[2].m_vAngle != vHistory[3].m_vAngle
+					|| flDelta23 > SNAP_SIZE_EPSILON && flDelta12 < SNAP_NOISE_EPSILON && vHistory[1].m_vAngle != vHistory[2].m_vAngle
 					)
 					&& flDelta01 < SNAP_NOISE_EPSILON && vHistory[0].m_vAngle != vHistory[1].m_vAngle
 					&& flDelta34 < SNAP_NOISE_EPSILON && vHistory[3].m_vAngle != vHistory[4].m_vAngle)
 				{
 					pCmd->viewangles.y += SNAP_NOISE_EPSILON * 2;
+
 					vHistory[0].m_vAngle = pCmd->viewangles;
 					vHistory[0].m_bSendingPacket = *pSendPacket = vHistory[1].m_bSendingPacket;
+
 					G::Choking = !*pSendPacket;
 				}
 			}

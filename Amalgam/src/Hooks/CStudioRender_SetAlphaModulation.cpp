@@ -1,7 +1,6 @@
 #include "../SDK/SDK.h"
 
-MAKE_HOOK(CStudioRender_SetAlphaModulation, U::Memory.GetVirtual(I::StudioRender, 28), void,
-	void* rcx, float flAlpha)
+MAKE_HOOK(CStudioRender_SetAlphaModulation, U::Memory.GetVirtual(I::StudioRender, 28), void, void* rcx, float flAlpha)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CStudioRender_SetAlphaModulation[DEFAULT_BIND])

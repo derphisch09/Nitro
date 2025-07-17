@@ -1,7 +1,6 @@
 #include "../SDK/SDK.h"
 
-MAKE_HOOK(CTFGCClientSystem_UpdateAssignedLobby, S::CTFGCClientSystem_UpdateAssignedLobby(), bool,
-	void* rcx)
+MAKE_HOOK(CTFGCClientSystem_UpdateAssignedLobby, S::CTFGCClientSystem_UpdateAssignedLobby(), bool, void* rcx)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CTFGCClientSystem_UpdateAssignedLobby[DEFAULT_BIND])

@@ -38,8 +38,7 @@ public:
 	Vector					m_LightingOrigin;
 };
 
-MAKE_HOOK(CStaticPropMgr_ComputePropOpacity, S::CStaticPropMgr_ComputePropOpacity(), void,
-	void* rcx, CStaticProp* pProp)
+MAKE_HOOK(CStaticPropMgr_ComputePropOpacity, S::CStaticPropMgr_ComputePropOpacity(), void, void* rcx, CStaticProp* pProp)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CStaticPropMgr_ComputePropOpacity[DEFAULT_BIND])

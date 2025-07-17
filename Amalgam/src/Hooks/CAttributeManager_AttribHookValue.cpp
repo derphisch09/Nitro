@@ -8,8 +8,7 @@ static inline int ColorToInt(const Color_t& col)
     return col.r << 16 | col.g << 8 | col.b;
 }
 
-MAKE_HOOK(CAttributeManager_AttribHookInt, S::CAttributeManager_AttribHookInt(), int,
-	int value, const char* name, void* econent, void* buffer, bool isGlobalConstString)
+MAKE_HOOK(CAttributeManager_AttribHookInt, S::CAttributeManager_AttribHookInt(), int, int value, const char* name, void* econent, void* buffer, bool isGlobalConstString)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CAttributeManager_AttribHookValue[DEFAULT_BIND])
@@ -26,9 +25,12 @@ MAKE_HOOK(CAttributeManager_AttribHookInt, S::CAttributeManager_AttribHookInt(),
 	{
 		switch (Vars::Visuals::Effects::SpellFootsteps.Value)
 		{
-		case Vars::Visuals::Effects::SpellFootstepsEnum::Color: return ColorToInt(Vars::Colors::SpellFootstep.Value);
-		case Vars::Visuals::Effects::SpellFootstepsEnum::Team: return 1;
-		case Vars::Visuals::Effects::SpellFootstepsEnum::Halloween: return 2;
+		case Vars::Visuals::Effects::SpellFootstepsEnum::Color: 
+			return ColorToInt(Vars::Colors::SpellFootstep.Value);
+		case Vars::Visuals::Effects::SpellFootstepsEnum::Team: 
+			return 1;
+		case Vars::Visuals::Effects::SpellFootstepsEnum::Halloween: 
+			return 2;
 		}
 	}
 

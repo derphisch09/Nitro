@@ -2,8 +2,7 @@
 
 #include "../Features/Visuals/Visuals.h"
 
-MAKE_HOOK(CClientModeShared_ShouldDrawViewModel, U::Memory.GetVirtual(I::ClientModeShared, 24), bool,
-	void* rcx)
+MAKE_HOOK(CClientModeShared_ShouldDrawViewModel, U::Memory.GetVirtual(I::ClientModeShared, 24), bool, void* rcx)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CClientModeShared_ShouldDrawViewModel[DEFAULT_BIND])
@@ -11,6 +10,7 @@ MAKE_HOOK(CClientModeShared_ShouldDrawViewModel, U::Memory.GetVirtual(I::ClientM
 #endif
 
 	auto pLocal = H::Entities.GetLocal();
+
 	if (pLocal && pLocal->InCond(TF_COND_ZOOMED) && Vars::Visuals::Removals::Scope.Value && Vars::Visuals::UI::ZoomFieldOfView.Value > 20 && !I::Input->CAM_IsThirdPerson())
 		return true;
 

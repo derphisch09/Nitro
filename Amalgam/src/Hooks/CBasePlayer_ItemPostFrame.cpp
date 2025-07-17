@@ -1,15 +1,17 @@
 #include "../SDK/SDK.h"
 
+#include "../Features/EnginePrediction/EnginePrediction.h"
+
 MAKE_SIGNATURE(CBasePlayer_ItemPostFrame, "client.dll", "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 48 8B 39 48 8B F1 FF 97", 0x0);
 MAKE_SIGNATURE(GetAnimationEvent, "server.dll", "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 0F 29 74 24 ? 0F 28 F3 49 8B F0", 0x0);
 
 struct animevent_t
 {
-	int				event;
-	const char*		options;
-	float			cycle;
-	float			eventtime;
-	int				type;
+	int event;
+	const char* options;
+	float cycle;
+	float eventtime;
+	int type;
 	CBaseAnimating* pSource;
 };
 
@@ -66,16 +68,19 @@ typedef enum
 	LAST_SHARED_ANIMEVENT,
 } Animevent;
 
-MAKE_HOOK(CBasePlayer_ItemPostFrame, S::CBasePlayer_ItemPostFrame(), void,
-	void* rcx)
+MAKE_HOOK(CBasePlayer_ItemPostFrame, S::CBasePlayer_ItemPostFrame(), void, void* rcx)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CBasePlayer_ItemPostFrame[DEFAULT_BIND])
 		return CALL_ORIGINAL(rcx);
 #endif
+	
+	if (F::EnginePrediction.m_bPostThink)
+		return;
 
 	auto pLocal = reinterpret_cast<CTFPlayer*>(rcx);
 	auto pWeapon = H::Entities.GetWeapon();
+
 	if (!pWeapon)
 		return CALL_ORIGINAL(rcx);
 
@@ -98,12 +103,18 @@ MAKE_HOOK(CBasePlayer_ItemPostFrame, S::CBasePlayer_ItemPostFrame(), void,
 	}
 	else
 	{
+<<<<<<< Updated upstream
 		// not perfect but seems to work fine enough for casual use
 		auto pViewmodel = pLocal->m_hViewModel()->As<CBaseAnimating>();
+=======
+		auto pViewmodel = pLocal->m_hViewModel().Get()->As<CBaseAnimating>();
+
+>>>>>>> Stashed changes
 		if (!pViewmodel)
 			return CALL_ORIGINAL(rcx);
 
 		auto pStudio = pViewmodel->GetModelPtr();
+
 		if (!pStudio)
 			return CALL_ORIGINAL(rcx);
 
@@ -115,11 +126,13 @@ MAKE_HOOK(CBasePlayer_ItemPostFrame, S::CBasePlayer_ItemPostFrame(), void,
 
 		animevent_t event; int index = 0;
 		index = S::GetAnimationEvent.Call<int>(pStudio, pViewmodel->m_nSequence(), &event, flLastCycle, flCurrCycle, index);
+
 		if (!index || event.event != AE_WPN_INCREMENTAMMO)
 			return CALL_ORIGINAL(rcx);
 	}
 
 	CALL_ORIGINAL(rcx);
+
 	pWeapon->IncrementAmmo();
 	pWeapon->m_bReloadedThroughAnimEvent() = true;
 }

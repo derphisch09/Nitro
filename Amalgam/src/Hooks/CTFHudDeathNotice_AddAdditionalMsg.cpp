@@ -6,8 +6,7 @@ MAKE_SIGNATURE(CLocalizedStringTable_Find, "vgui2.dll", "40 53 48 83 EC ? 48 8B 
 static bool bShouldOverride = false;
 static std::wstring sOverride;
 
-MAKE_HOOK(CTFHudDeathNotice_AddAdditionalMsg, S::CTFHudDeathNotice_AddAdditionalMsg(), void,
-	void* rcx, int iKillerID, int iVictimID, const char* pMsgKey)
+MAKE_HOOK(CTFHudDeathNotice_AddAdditionalMsg, S::CTFHudDeathNotice_AddAdditionalMsg(), void, void* rcx, int iKillerID, int iVictimID, const char* pMsgKey)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CTFHudDeathNotice_AddAdditionalMsg[DEFAULT_BIND])
@@ -55,15 +54,15 @@ MAKE_HOOK(CTFHudDeathNotice_AddAdditionalMsg, S::CTFHudDeathNotice_AddAdditional
 	CALL_ORIGINAL(rcx, iKillerID, iVictimID, pMsgKey);
 }
 
-MAKE_HOOK(CLocalizedStringTable_Find, S::CLocalizedStringTable_Find(), wchar_t*,
-	void* rcx, const char* pName)
+MAKE_HOOK(CLocalizedStringTable_Find, S::CLocalizedStringTable_Find(), wchar_t*, void* rcx, const char* pName)
 {
 #ifdef DEBUG_HOOKS
-	if (!Vars::Hooks::CTFHudDeathNotice_AddAdditionalMsg[DEFAULT_BIND])
+	if (!Vars::Hooks::CLocalizedStringTable_Find[DEFAULT_BIND])
 		return CALL_ORIGINAL(rcx, pName);
 #endif
 
 	if (bShouldOverride)
 		return (wchar_t*)sOverride.c_str();
+
 	return CALL_ORIGINAL(rcx, pName);
 }

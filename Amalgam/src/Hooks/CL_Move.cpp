@@ -9,8 +9,7 @@
 
 MAKE_SIGNATURE(CL_Move, "engine.dll", "40 55 53 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 83 3D", 0x0);
 
-MAKE_HOOK(CL_Move, S::CL_Move(), void,
-	float accumulated_extra_samples, bool bFinalTick)
+MAKE_HOOK(CL_Move, S::CL_Move(), void, float accumulated_extra_samples, bool bFinalTick)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CL_Move[DEFAULT_BIND])
@@ -21,8 +20,19 @@ MAKE_HOOK(CL_Move, S::CL_Move(), void,
 		return CALL_ORIGINAL(accumulated_extra_samples, bFinalTick);
 
 	F::Backtrack.m_iTickCount = I::GlobalVars->tickcount + 1;
+<<<<<<< Updated upstream
 	if (!Vars::Misc::Game::NetworkFix.Value && !SDK::IsLoopback())
 		F::Backtrack.m_iTickCount--;
+=======
+
+	if (!Vars::Misc::Game::NetworkFix.Value)
+	{
+		auto pNetChan = I::EngineClient->GetNetChannelInfo();
+
+		if (pNetChan && !pNetChan->IsLoopback())
+			F::Backtrack.m_iTickCount++;
+	}
+>>>>>>> Stashed changes
 
 	auto pLocal = H::Entities.GetLocal();
 	auto pWeapon = H::Entities.GetWeapon();

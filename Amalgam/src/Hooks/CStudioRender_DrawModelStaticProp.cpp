@@ -1,7 +1,6 @@
 #include "../SDK/SDK.h"
 
-MAKE_HOOK(CStudioRender_DrawModelStaticProp, U::Memory.GetVirtual(I::StudioRender, 30), void,
-	void* rcx, const DrawModelState_t& pState, const matrix3x4& modelToWorld, int flags)
+MAKE_HOOK(CStudioRender_DrawModelStaticProp, U::Memory.GetVirtual(I::StudioRender, 30), void, void* rcx, const DrawModelState_t& pState, const matrix3x4& modelToWorld, int flags)
 {
 #ifdef DEBUG_HOOKS
 	if (!Vars::Hooks::CStudioRender_DrawModelStaticProp[DEFAULT_BIND])
@@ -13,12 +12,12 @@ MAKE_HOOK(CStudioRender_DrawModelStaticProp, U::Memory.GetVirtual(I::StudioRende
 		if (auto pLocal = H::Entities.GetLocal())
 		{
 			Vec3 vOrigin = { modelToWorld[0][3], modelToWorld[1][3], modelToWorld[2][3] };
-
 			const float flDistance = pLocal->m_vecOrigin().DistTo(vOrigin);
-
 			float flAlpha = 1.f;
+
 			if (flDistance < 300.0f)
 				flAlpha = Math::RemapVal(flDistance, 150.0f, 300.0f, 0.15f, 1.f);
+
 			I::StudioRender->SetAlphaModulation(flAlpha);
 		}
 	}

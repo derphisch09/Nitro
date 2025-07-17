@@ -15,7 +15,9 @@ enum cmd_source_t
 static std::string sCmdString;
 
 #define PRE_STR "\x7\x7\x7\x7\x7\x7\x7"
-static std::vector<std::pair<std::string, std::string>> vStatic = {
+
+static std::vector<std::pair<std::string, std::string>> vStatic = 
+{
     { "\\x1", "\x1" },
     { "\\x01", "\x1" },
     { "\\x2", PRE_STR"\x2" },
@@ -68,10 +70,13 @@ static std::vector<std::pair<std::string, std::string>> vStatic = {
 
     { "\\t", "\t" },
 };
-static std::vector<std::function<void()>> vDynamic = {
+
+static std::vector<std::function<void()>> vDynamic = 
+{
     [&]()
     {
         auto pResource = H::Entities.GetPR();
+
         if (!pResource)
             return;
 
@@ -79,9 +84,11 @@ static std::vector<std::function<void()>> vDynamic = {
         std::string sReplace = pResource->m_pszPlayerName(I::EngineClient->GetLocalPlayer());
 
         size_t iPos = 0;
+
         while (true)
         {
             auto iFind = sCmdString.find(sFind, iPos);
+
             if (iFind == std::string::npos)
                 break;
             
@@ -92,11 +99,13 @@ static std::vector<std::function<void()>> vDynamic = {
     [&]()
     {
         auto pResource = H::Entities.GetPR();
+
         if (!pResource)
             return;
 
         std::string sFind = "\\{team}";
         std::string sReplace = PRE_STR"\x7""cccccc";
+
         switch (pResource->m_iTeam(I::EngineClient->GetLocalPlayer()))
         {
         case TF_TEAM_BLUE: sReplace = PRE_STR"\x7""99ccff"; break;
@@ -104,9 +113,11 @@ static std::vector<std::function<void()>> vDynamic = {
         }
 
         size_t iPos = 0;
+
         while (true)
         {
             auto iFind = sCmdString.find(sFind, iPos);
+
             if (iFind == std::string::npos)
                 break;
             
@@ -121,6 +132,7 @@ static std::vector<std::function<void()>> vDynamic = {
         while (true)
         {
             std::smatch match; std::regex_search(sCmdString, match, std::regex(sRegex));
+
             if (match.size() != 4)
                 break;
 
@@ -139,6 +151,7 @@ static std::vector<std::function<void()>> vDynamic = {
         while (true)
         {
             std::smatch match; std::regex_search(sCmdString, match, std::regex(sRegex));
+
             if (match.size() != 5)
                 break;
 
@@ -158,6 +171,7 @@ static std::vector<std::function<void()>> vDynamic = {
         while (true)
         {
             std::smatch match; std::regex_search(sCmdString, match, std::regex(sRegex));
+
             if (match.size() != 4)
                 break;
 
@@ -176,6 +190,7 @@ static std::vector<std::function<void()>> vDynamic = {
         while (true)
         {
             std::smatch match; std::regex_search(sCmdString, match, std::regex(sRegex));
+
             if (match.size() != 5)
                 break;
 
@@ -195,6 +210,7 @@ static std::vector<std::function<void()>> vDynamic = {
         while (true)
         {
             std::smatch match; std::regex_search(sCmdString, match, std::regex(sRegex));
+
             if (match.size() != 3)
                 break;
 
@@ -202,6 +218,7 @@ static std::vector<std::function<void()>> vDynamic = {
             auto str = match[2].str();
 
             std::ostringstream sStream;
+
             for (int i = 0; i < n; i++)
                 sStream << str;
 
@@ -210,8 +227,7 @@ static std::vector<std::function<void()>> vDynamic = {
     },
 };
 
-MAKE_HOOK(Cbuf_ExecuteCommand, S::Cbuf_ExecuteCommand(), void,
-	CCommand& args, cmd_source_t source)
+MAKE_HOOK(Cbuf_ExecuteCommand, S::Cbuf_ExecuteCommand(), void, CCommand& args, cmd_source_t source)
 {
 #ifdef DEBUG_HOOKS
     if (!Vars::Hooks::Cbuf_ExecuteCommand[DEFAULT_BIND])
@@ -222,6 +238,7 @@ MAKE_HOOK(Cbuf_ExecuteCommand, S::Cbuf_ExecuteCommand(), void,
 	{
 		std::string sCommand = args[0];
 		std::deque<std::string> vArgs;
+
 		for (int i = 1; i < args.ArgC(); i++)
 			vArgs.push_back(args[i]);
 
@@ -239,9 +256,11 @@ MAKE_HOOK(Cbuf_ExecuteCommand, S::Cbuf_ExecuteCommand(), void,
 			for (auto& [sFind, sReplace] : vStatic)
 			{
 				size_t iPos = 0;
+
 				while (true)
 				{
 					auto iFind = sCmdString.find(sFind, iPos);
+
 					if (iFind == std::string::npos)
 						break;
 
@@ -249,6 +268,7 @@ MAKE_HOOK(Cbuf_ExecuteCommand, S::Cbuf_ExecuteCommand(), void,
 					sCmdString = sCmdString.replace(iFind, sFind.length(), sReplace);
 				}
 			}
+
 			for (auto& fFunction : vDynamic)
                 fFunction();
 
