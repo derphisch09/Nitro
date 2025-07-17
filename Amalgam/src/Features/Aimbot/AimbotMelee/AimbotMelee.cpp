@@ -487,6 +487,9 @@ void CAimbotMelee::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd
 		/* || !F::AimbotGlobal.ShouldAim() && pWeapon->m_flSmackTime() < 0.f*/)
 		return;
 
+	if (AutoEngie(pLocal, pWeapon, pCmd))
+		return;
+
 	if (RunSapper(pLocal, pWeapon, pCmd))
 		return;
 
@@ -648,4 +651,286 @@ bool CAimbotMelee::RunSapper(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd
 	}
 
 	return true;
+}
+
+bool CAimbotMelee::AimFriendlyBuilding(CTFPlayer* pLocal, CBaseObject* pBuilding)
+{
+	// Current Metal
+	int iCurrMetal = pLocal->m_iMetalCount();
+
+	// Autorepair is on
+	bool bShouldRepair = false;
+	switch (pBuilding->GetClassID())
+	{
+	case ETFClassID::CObjectSentrygun:
+	{
+		if (Vars::Aimbot::Melee::AutoEngie::AutoRepair.Value & Vars::Aimbot::Melee::AutoEngie::AutoRepairEnum::Sentry)
+		{
+			// Current sentry ammo
+			int iSentryAmmo = pBuilding->As<CObjectSentrygun>()->m_iAmmoShells();
+			// Max Sentry ammo
+			int iMaxAmmo = 0;
+
+			// Set Ammo depending on level
+			switch (pBuilding->m_iUpgradeLevel())
+			{
+			case 1:
+				iMaxAmmo = 150;
+				break;
+			case 2:
+			case 3:
+				iMaxAmmo = 200;
+			}
+
+			// Sentry needs ammo
+			if (iSentryAmmo < iMaxAmmo)
+				return true;
+
+			bShouldRepair = true;
+			break;
+		}
+	}
+	case ETFClassID::CObjectDispenser:
+	{
+		if (Vars::Aimbot::Melee::AutoEngie::AutoRepair.Value & Vars::Aimbot::Melee::AutoEngie::AutoRepairEnum::Dispenser)
+			bShouldRepair = true;
+		break;
+	}
+	case ETFClassID::CObjectTeleporter:
+	{
+		if (Vars::Aimbot::Melee::AutoEngie::AutoRepair.Value & Vars::Aimbot::Melee::AutoEngie::AutoRepairEnum::Teleporter)
+			bShouldRepair = true;
+		break;
+	}
+	default:
+		break;
+	}
+
+	// Buildings needs to be repaired
+	if (iCurrMetal && bShouldRepair && pBuilding->m_iHealth() != pBuilding->m_iMaxHealth())
+		return true;
+
+	// Autoupgrade is on
+	if (Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value)
+	{
+		// Upgrade lvel
+		int iUpgradeLevel = pBuilding->m_iUpgradeLevel();
+
+		// Don't upgrade mini sentries
+		if (pBuilding->m_bMiniBuilding())
+			return false;
+
+		int iLevel = 0;
+		// Pick The right rvar to check depending on building type
+		switch (pBuilding->GetClassID())
+		{
+
+		case ETFClassID::CObjectSentrygun:
+			// Enabled check
+			if (!(Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value & Vars::Aimbot::Melee::AutoEngie::AutoUpgradeEnum::Sentry))
+				return false;
+			iLevel = Vars::Aimbot::Melee::AutoEngie::AutoUpgradeSentryLVL.Value;
+			break;
+
+		case ETFClassID::CObjectDispenser:
+			// Enabled check
+			if (!(Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value & Vars::Aimbot::Melee::AutoEngie::AutoUpgradeEnum::Dispenser))
+				return false;
+			iLevel = Vars::Aimbot::Melee::AutoEngie::AutoUpgradeDispenserLVL.Value;
+			break;
+
+		case ETFClassID::CObjectTeleporter:
+			// Enabled check
+			if (!(Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value & Vars::Aimbot::Melee::AutoEngie::AutoUpgradeEnum::Teleporter))
+				return false;
+			iLevel = Vars::Aimbot::Melee::AutoEngie::AutoUpgradeTeleporterLVL.Value;
+			break;
+		}
+
+		// Can be upgraded
+		if (iUpgradeLevel < iLevel && iCurrMetal)
+			return true;
+	}
+	return false;
+}
+
+bool ShouldWrenchBuilding(ETFClassID id)
+{
+	switch (id)
+	{
+	case ETFClassID::CObjectSentrygun:
+		// Repair sentries check
+		if (!(Vars::Aimbot::Melee::AutoEngie::AutoRepair.Value & Vars::Aimbot::Melee::AutoEngie::AutoRepairEnum::Sentry) && !(Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value & Vars::Aimbot::Melee::AutoEngie::AutoUpgradeEnum::Sentry))
+			return false;
+		break;
+	case ETFClassID::CObjectDispenser:
+		// Repair Dispensers check
+		if (!(Vars::Aimbot::Melee::AutoEngie::AutoRepair.Value & Vars::Aimbot::Melee::AutoEngie::AutoRepairEnum::Dispenser) && !(Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value & Vars::Aimbot::Melee::AutoEngie::AutoUpgradeEnum::Dispenser))
+			return false;
+		break;
+	case ETFClassID::CObjectTeleporter:
+		// Repair Teleporters check
+		if (!(Vars::Aimbot::Melee::AutoEngie::AutoRepair.Value & Vars::Aimbot::Melee::AutoEngie::AutoRepairEnum::Teleporter) && !(Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value & Vars::Aimbot::Melee::AutoEngie::AutoUpgradeEnum::Teleporter))
+			return false;
+		break;
+	default:
+		return false;
+	}
+	return true;
+}
+
+std::vector<Target_t> CAimbotMelee::GetTargetBuilding(CTFPlayer* pLocal, CTFWeaponBase* pWeapon)
+{
+	std::vector<Target_t> vValidTargets;
+
+	const Vec3 vLocalPos = pLocal->GetShootPos();
+	const Vec3 vLocalAngles = I::EngineClient->GetViewAngles();
+
+	for (auto pEntity : H::Entities.GetGroup(EGroupType::BUILDINGS_TEAMMATES))
+	{
+		if (!pEntity->IsBuilding())
+			continue;
+
+		if (!ShouldWrenchBuilding(pEntity->GetClassID()))
+			continue;
+
+		Vec3 vPos = pEntity->GetCenter();
+		Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vPos);
+		const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+		const float flDistTo = vLocalPos.DistTo(vPos);
+
+		if (flFOVTo > Vars::Aimbot::General::AimFOV.Value)
+			continue;
+
+		vValidTargets.push_back({ pEntity, TargetEnum::Dispenser, vPos, vAngleTo, flFOVTo, flDistTo });
+	}
+
+	std::sort(vValidTargets.begin(), vValidTargets.end(), [&](const Target_t& a, const Target_t& b) -> bool
+		{
+			const auto a_iClassID = a.m_pEntity->GetClassID();
+			const auto b_iClassID = b.m_pEntity->GetClassID();
+			switch (a_iClassID)
+			{
+			case ETFClassID::CObjectSentrygun:
+			{
+				if (Vars::Aimbot::Melee::AutoEngie::AutoRepairPrio.Value == Vars::Aimbot::Melee::AutoEngie::AutoRepairPrioEnum::Sentry)
+					return a_iClassID != b_iClassID;
+				break;
+			}
+			case ETFClassID::CObjectDispenser:
+			{
+				if (Vars::Aimbot::Melee::AutoEngie::AutoRepairPrio.Value == Vars::Aimbot::Melee::AutoEngie::AutoRepairPrioEnum::Dispenser)
+					return a_iClassID != b_iClassID;
+				break;
+			}
+			case ETFClassID::CObjectTeleporter:
+			{
+				if (Vars::Aimbot::Melee::AutoEngie::AutoRepairPrio.Value == Vars::Aimbot::Melee::AutoEngie::AutoRepairPrioEnum::Teleporter)
+					return a_iClassID != b_iClassID;
+				break;
+			}
+			default: break;
+			}
+			return false;
+		});
+
+	return vValidTargets;
+}
+
+bool CAimbotMelee::AutoEngie(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
+{
+	if (pLocal->m_iClass() != TF_CLASS_ENGINEER || !Vars::Aimbot::Melee::AutoEngie::AutoUpgrade.Value && !Vars::Aimbot::Melee::AutoEngie::AutoRepair.Value)
+		return false;
+
+	auto vTargets = GetTargetBuilding(pLocal, pWeapon);
+	if (vTargets.empty())
+		return false;
+
+	iDoubletapTicks = F::Ticks.GetTicks(pWeapon);
+	const bool bShouldSwing = iDoubletapTicks <= (GetSwingTime(pWeapon) ? 14 : 0) || Vars::Doubletap::AntiWarp.Value && pLocal->m_hGroundEntity();
+
+	Vec3 vEyePos = pLocal->GetShootPos();
+	std::unordered_map<int, std::deque<TickRecord>> mRecordMap;
+	std::unordered_map<int, std::vector<Vec3>> mPaths;
+	SimulatePlayers(pLocal, pWeapon, vTargets, vEyePos, mRecordMap, mPaths);
+
+	//if (!G::AimTarget.m_iEntIndex)
+	//	G::AimTarget = { vTargets.front().m_pEntity->entindex(), I::GlobalVars->tickcount, 0 };
+
+	for (auto& tTarget : vTargets)
+	{
+		if (!AimFriendlyBuilding(pLocal, tTarget.m_pEntity->As<CBaseObject>()))
+			continue;
+
+		const auto iResult = CanHit(tTarget, pLocal, pWeapon, vEyePos, mRecordMap[tTarget.m_pEntity->entindex()]);
+		if (!iResult) continue;
+		if (iResult == 2)
+		{
+			G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount, 0 };
+			Aim(pCmd, tTarget.m_vAngleTo);
+			return true;
+		}
+
+		G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount };
+		G::AimPoint = { tTarget.m_vPos, I::GlobalVars->tickcount };
+
+		if (Vars::Aimbot::General::AutoShoot.Value && pWeapon->m_flSmackTime() < 0.f)
+		{
+			if (bShouldSwing)
+				pCmd->buttons |= IN_ATTACK;
+			if (iDoubletapTicks)
+				F::Ticks.m_bDoubletap = true;
+		}
+
+		G::Attacking = SDK::IsAttacking(pLocal, pWeapon, pCmd, true);
+
+		bool bPath = Vars::Visuals::Simulation::SwingLines.Value && Vars::Visuals::Simulation::PlayerPath.Value && Vars::Aimbot::General::AutoShoot.Value && !Vars::Debug::Info.Value;
+		bool bLine = Vars::Visuals::Line::Enabled.Value;
+		bool bBoxes = Vars::Visuals::Hitbox::BonesEnabled.Value & Vars::Visuals::Hitbox::BonesEnabledEnum::OnShot;
+		if (pCmd->buttons & IN_ATTACK && pWeapon->m_flSmackTime() < 0.f && bPath)
+		{
+			G::LineStorage.clear();
+			G::BoxStorage.clear();
+			G::PathStorage.clear();
+
+			if (bPath)
+			{
+				if (Vars::Colors::PlayerPath.Value.a)
+					G::PathStorage.emplace_back(mPaths[pLocal->entindex()], I::GlobalVars->curtime + Vars::Visuals::Simulation::DrawDuration.Value, Vars::Colors::PlayerPath.Value, Vars::Visuals::Simulation::PlayerPath.Value);
+				if (Vars::Colors::PlayerPathClipped.Value.a)
+					G::PathStorage.emplace_back(mPaths[pLocal->entindex()], I::GlobalVars->curtime + Vars::Visuals::Simulation::DrawDuration.Value, Vars::Colors::PlayerPathClipped.Value, Vars::Visuals::Simulation::PlayerPath.Value, true);
+			}
+		}
+		if (G::Attacking == 1 && (bLine || bBoxes))
+		{
+			G::LineStorage.clear();
+			G::BoxStorage.clear();
+
+			if (bLine)
+			{
+				Vec3 vEyePos = pLocal->GetShootPos();
+				float flDist = vEyePos.DistTo(tTarget.m_vPos);
+				Vec3 vForward; Math::AngleVectors(tTarget.m_vAngleTo + pLocal->m_vecPunchAngle(), &vForward);
+
+				if (Vars::Colors::Line.Value.a)
+					G::LineStorage.emplace_back(std::pair<Vec3, Vec3>(vEyePos, vEyePos + vForward * flDist), I::GlobalVars->curtime + Vars::Visuals::Simulation::DrawDuration.Value, Vars::Colors::Line.Value);
+				if (Vars::Colors::LineClipped.Value.a)
+					G::LineStorage.emplace_back(std::pair<Vec3, Vec3>(vEyePos, vEyePos + vForward * flDist), I::GlobalVars->curtime + Vars::Visuals::Simulation::DrawDuration.Value, Vars::Colors::LineClipped.Value, true);
+			}
+			if (bBoxes)
+			{
+				auto vBoxes = F::Visuals.GetHitboxes(tTarget.m_pRecord->m_BoneMatrix.m_aBones, tTarget.m_pEntity->As<CBaseAnimating>());
+				G::BoxStorage.insert(G::BoxStorage.end(), vBoxes.begin(), vBoxes.end());
+			}
+		}
+		else if (G::Attacking != 1)
+		{
+			Vec3 vEyePos = pLocal->GetShootPos();
+			Aim(G::CurrentUserCmd->viewangles, Math::CalcAngle(vEyePos, tTarget.m_vPos), tTarget.m_vAngleTo);
+		}
+
+		Aim(pCmd, tTarget.m_vAngleTo);
+		return true;
+	}
+	return false;
 }
