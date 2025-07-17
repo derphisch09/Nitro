@@ -96,6 +96,13 @@ namespace SDK
 
 	void Trace(const Vec3& vecStart, const Vec3& vecEnd, unsigned int nMask, ITraceFilter* pFilter, CGameTrace* pTrace);
 	void TraceHull(const Vec3& vecStart, const Vec3& vecEnd, const Vec3& vecHullMin, const Vec3& vecHullMax, unsigned int nMask, ITraceFilter* pFilter, CGameTrace* pTrace);
+	bool TraceEntityBullet(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, int* pHitHitboxOut = nullptr);
+	bool TraceEntityAutoDet(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo);
+	bool TraceProjectile(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo);
+	bool TraceProjectilePipes(const Vec3& vFrom, const Vec3& vTo, CBaseEntity* pTarget, bool* pHitTarget);
+	bool TraceFlames(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo);
+	bool TraceEntityMelee(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo);
+	bool TracePositionWorld(const Vec3& vFrom, const Vec3& vTo);
 
 	bool VisPos(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask = MASK_SHOT | CONTENTS_GRATE);
 	bool VisPosCollideable(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask = MASK_SHOT | CONTENTS_GRATE);
@@ -116,11 +123,52 @@ namespace SDK
 
 	void FixMovement(CUserCmd* pCmd, const Vec3& vCurAngle, const Vec3& vTargetAngle);
 	void FixMovement(CUserCmd* pCmd, const Vec3& vTargetAngle);
+	void FixMovementAlt(CUserCmd* pCmd, const Vec3& vTargetAngle);
 	bool StopMovement(CTFPlayer* pLocal, CUserCmd* pCmd);
 
 	Vec3 ComputeMove(const CUserCmd* pCmd, CTFPlayer* pLocal, Vec3& vFrom, Vec3& vTo);
+
 	void WalkTo(CUserCmd* pCmd, CTFPlayer* pLocal, Vec3& vFrom, Vec3& vTo, float flScale = 1.f);
 	void WalkTo(CUserCmd* pCmd, CTFPlayer* pLocal, Vec3& vTo, float flScale = 1.f);
+	void WalkToFixAntiAim(CUserCmd* pCmd, const Vec3& vTargetAngle);
+
+	int TimeToTicks(float time);
+	float TicksToTime(int tick);
+
+	float GetLerp();
+	float GetLatency();
+	float GetGravity();
+	float GetServerTime();
+
+	void Friction(Vec3& velocity, float surface_friction);
+
+	bool IsLoopback();
+
+	float AirburstDamageForce(Vec3& size, float damage, float scale);
+
+	bool DoesHitEntity(CBaseEntity* Target, Vec3 Point, Vec3 predicted, float Distance);
 
 	void GetProjectileFireSetup(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vOffset, Vec3& vPosOut, Vec3& vAngOut, bool bPipes = false, bool bInterp = false, bool bAllowFlip = true);
+<<<<<<< Updated upstream
+=======
+	void GetProjectileFireSetupAirblast(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vPosIn, Vec3& vAngOut, bool bInterp = false);
+
+	float CalculateSplashRadiusDamageFalloff(CTFWeaponBase* pWeapon, CTFPlayer* pAttacker, CTFWeaponBaseGrenadeProj* pProjectile, float flRadius);
+	float CalculateSplashRadiusDamage(CTFWeaponBase* pWeapon, CTFPlayer* pAttacker, CTFWeaponBaseGrenadeProj* pProjectile, float flRadius, float flDist, float& flDamageNoBuffs, bool bSelf = false);
+
+	bool WeaponDoesNotUseAmmo(CTFWeaponBase* pWeapon, bool bIncludeInfiniteAmmo = true);
+	bool WeaponDoesNotUseAmmo(int WeaponID, int DefIdx, bool bIncludeInfiniteAmmo = true);
+
+	int GetWeaponMaxReserveAmmo(int WeaponID, int DefIdx);
+
+	std::string GetLevelName();
+
+	bool IsWeaponCapableOfHeadshot(CTFWeaponBase* pWeapon);
+	bool IsWeaponHitscan(CTFWeaponBase* wep);
+	bool IsWeaponMelee(CTFWeaponBase* wep);
+	bool IsWeaponProjectile(CTFWeaponBase* wep);
+	bool IsWeaponChargeable(CTFWeaponBase* wep);
+
+	bool IsBehindAndFacingTarget(const Vec3& vPlayerCenter, const Vec3& vTargetCenter, const Vec3& vPlayerViewAngles, const Vec3& vTargetEyeAngles);
+>>>>>>> Stashed changes
 }
