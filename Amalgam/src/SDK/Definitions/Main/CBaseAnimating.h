@@ -5,6 +5,8 @@
 MAKE_SIGNATURE(CBaseAnimating_FrameAdvance, "client.dll", "48 89 5C 24 ? 48 89 6C 24 ? 57 48 81 EC ? ? ? ? 44 0F 29 54 24", 0x0);
 MAKE_SIGNATURE(CBaseAnimating_GetBonePosition, "client.dll", "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 83 EC ? 8B DA 49 8B F1", 0x0);
 MAKE_SIGNATURE(CBaseAnimating_SequenceDuration, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 80 B9 ? ? ? ? ? 48 8B D9 8B B9", 0x0);
+MAKE_SIGNATURE(CBaseAnimating_AttachmentHelper, "client.dll", "40 55 56 48 81 EC B8 00 00 00 48 8B EA", 0x0);
+MAKE_SIGNATURE(CBaseAnimating_InvalidateBoneCache, "client.dll", "8B 05 ?? ?? ?? ?? FF C8 C7 81", 0x0);
 
 class CBaseAnimating : public CBaseEntity
 {
@@ -30,6 +32,7 @@ public:
 	NETVAR(m_fadeMinDist, float, "CBaseAnimating", "m_fadeMinDist");
 	NETVAR(m_fadeMaxDist, float, "CBaseAnimating", "m_fadeMaxDist");
 	NETVAR(m_flFadeScale, float, "CBaseAnimating", "m_flFadeScale");
+
 	inline std::array<float, 24>& m_flPoseParameter()
 	{
 		static int nOffset = U::NetVars.GetNetVar("CBaseAnimating", "m_flPoseParameter");
@@ -38,6 +41,7 @@ public:
 
 	NETVAR_OFF(GetModelPtr, CStudioHdr*, "CBaseAnimating", "m_nMuzzleFlashParity", 16);
 	NETVAR_OFF(m_bSequenceLoops, bool, "CBaseAnimating", "m_flFadeScale", 13);
+
 	inline CUtlVector<matrix3x4>* GetCachedBoneData()
 	{
 		static int nOffset = U::NetVars.GetNetVar("CBaseAnimating", "m_hLightingOrigin") - 88;
@@ -49,6 +53,9 @@ public:
 	SIGNATURE_ARGS(FrameAdvance, float, CBaseAnimating, (float flInterval), this, flInterval);
 	SIGNATURE_ARGS(GetBonePosition, float, CBaseAnimating, (int iBone, Vector& origin, QAngle& angles), this, iBone, std::ref(origin), std::ref(angles));
 	SIGNATURE(SequenceDuration, float, CBaseAnimating, this);
+	SIGNATURE_ARGS(AttachmentHelper, bool, CBaseAnimating, (CStudioHdr* hdr), this, hdr);
+	SIGNATURE(InvalidateBoneCache, void, CBaseAnimating, this);
+
 	inline float SequenceDuration(int iSequence)
 	{
 		int iOriginalSequence = m_nSequence();
