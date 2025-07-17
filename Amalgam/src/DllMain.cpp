@@ -1,4 +1,5 @@
 #include <Windows.h>
+
 #include "Core/Core.h"
 #include "Utils/CrashLog/CrashLog.h"
 
@@ -6,6 +7,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 {
 	U::Core.Load();
 	U::Core.Loop();
+	CrashLog::Unload();
 	U::Core.Unload();
 
 	CrashLog::Unload();
