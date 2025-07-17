@@ -93,9 +93,7 @@ bool CNoSpreadHitscan::ParsePlayerPerf(std::string sMsg)
 		if (flNewServerTime < m_flServerTime)
 			return true;
 
-		auto pNetChan = I::EngineClient->GetNetChannelInfo();
-		bool bLoopback = pNetChan && pNetChan->IsLoopback();
-
+		bool bLoopback = SDK::IsLoopback();
 		m_flServerTime = flNewServerTime;
 
 		if (bLoopback)
@@ -155,7 +153,7 @@ void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* 
 			int iTicks = F::Ticks.GetTicks();
 			if (!iTicks || iTicks < TIME_TO_TICKS(flFireRate) * 2)
 			{
-				float flTimeSinceLastShot = TICKS_TO_TIME(pLocal->m_nTickBase()) - pWeapon->m_flLastFireTime();
+				float flTimeSinceLastShot = I::GlobalVars->curtime - pWeapon->m_flLastFireTime();
 				if (flTimeSinceLastShot > (iBulletsPerShot > 1 ? 0.25f : 1.25f))
 					return;
 			}

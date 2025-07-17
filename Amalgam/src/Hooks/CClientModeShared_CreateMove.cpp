@@ -57,10 +57,14 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 
 	I::Prediction->Update(I::ClientState->m_nDeltaTick, I::ClientState->m_nDeltaTick > 0, I::ClientState->last_command_ack, I::ClientState->lastoutgoingcommand + I::ClientState->chokedcommands);
 
-	// correct tick_count for fakeinterp / nointerp
-	pCmd->tick_count += TICKS_TO_TIME(F::Backtrack.GetFakeInterp()) - (Vars::Visuals::Removals::Interpolation.Value ? 0 : TICKS_TO_TIME(G::Lerp));
-	if (G::OriginalMove.m_iButtons & IN_DUCK) // lol
-		pCmd->buttons |= IN_DUCK;
+	if (!Vars::Misc::Game::AntiCheatCompatibility.Value)
+	{	// correct tick_count for fakeinterp / nointerp
+		pCmd->tick_count += TIME_TO_TICKS(F::Backtrack.GetFakeInterp());
+		if (!Vars::Visuals::Removals::Interpolation.Value && Vars::Visuals::Removals::NoLerp.Value)
+			pCmd->tick_count -= TIME_TO_TICKS(G::Lerp);
+	}
+	if (G::OriginalMove.m_iButtons & IN_DUCK)
+		pCmd->buttons |= IN_DUCK; // lol
 
 	auto pLocal = H::Entities.GetLocal();
 	auto pWeapon = H::Entities.GetWeapon();
@@ -168,13 +172,13 @@ MAKE_HOOK(CClientModeShared_CreateMove, U::Memory.GetVirtual(I::ClientModeShared
 
 	F::EnginePrediction.Start(pLocal, pCmd);
 	F::Aimbot.Run(pLocal, pWeapon, pCmd);
-	F::EnginePrediction.End(pLocal, pCmd);
-
 	F::CritHack.Run(pLocal, pWeapon, pCmd);
 	F::NoSpread.Run(pLocal, pWeapon, pCmd);
+	F::Resolver.CreateMove(pLocal);
+	F::EnginePrediction.End(pLocal, pCmd);
+
 	F::Misc.RunPost(pLocal, pCmd, *pSendPacket);
 	F::PacketManip.Run(pLocal, pWeapon, pCmd, pSendPacket);
-	F::Resolver.CreateMove(pLocal);
 	F::Visuals.CreateMove(pLocal, pWeapon);
 
 	{
