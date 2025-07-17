@@ -1,9 +1,12 @@
 #pragma once
+
+#include <stdint.h>
 #include <algorithm>
 #include <vector>
 #include <deque>
 #include <string>
 #include <format>
+#include <cmath>
 
 #define PI 3.14159265358979323846
 #define M_RADPI 57.295779513082
@@ -255,6 +258,23 @@ public:
 		return (x * x + y * y);
 	}
 
+	inline float Normalize()
+	{
+		float flLength = Length();
+		float flLengthNormal = 1.f / (FLT_EPSILON + flLength);
+
+		x *= flLengthNormal;
+		y *= flLengthNormal;
+
+		return flLength;
+	}
+
+	inline Vec2 Normalized()
+	{
+		float flLengthNormal = 1.f / (FLT_EPSILON + Length());
+		return Vec2(x * flLengthNormal, y * flLengthNormal);
+	}
+
 	inline float DistTo(const Vec2& v) const
 	{
 		return (*this - v).Length();
@@ -274,6 +294,12 @@ public:
 	{
 		return fabsf(x) < 0.001f &&
 			   fabsf(y) < 0.001f;
+	}
+
+	inline bool IsZeroTolerance(float tolerance = 0.001f) const
+	{
+		return fabsf(x) < tolerance &&
+			fabsf(y) < tolerance;
 	}
 };
 using Vector2D = Vec2;
@@ -317,6 +343,11 @@ public:
 	inline Vec3& operator=(const Vec3& v)
 	{
 		x = v.x; y = v.y; z = v.z; return *this;
+	}
+
+	inline Vec3& operator-()
+	{
+		x = -x; y = -y; z = -z; return *this;
 	}
 
 	inline float& operator[](int i)
@@ -619,12 +650,20 @@ public:
 			   fabsf(z) < 0.001f;
 	}
 
+	inline bool IsZeroTolerance(float tolerance = 0.001f) const
+	{
+		return fabsf(x) < tolerance &&
+			fabsf(y) < tolerance &&
+			fabsf(z) < tolerance;
+	}
+
 	inline Vec3 ToAngle() const noexcept
 	{
 		return { RAD2DEG(atan2(-z, hypot(x, y))),
 				 RAD2DEG(atan2(y, x)),
 				 0.f };
 	}
+
 	inline Vec3 FromAngle() const noexcept
 	{
 		return { cos(DEG2RAD(x)) * cos(DEG2RAD(y)),
@@ -801,12 +840,18 @@ struct FloatRange_t
 	}
 };
 
-namespace LerpEnum {
-	enum LerpEnum {
-		All, NoAlpha, Alpha
+namespace LerpEnum 
+{
+	enum LerpEnum 
+	{
+		All, 
+		NoAlpha,
+		Alpha
 	};
 };
+
 using byte = unsigned char;
+
 struct Color_t
 {
 	byte r = 255, g = 255, b = 255, a = 255;
@@ -891,6 +936,43 @@ struct Color_t
 		return tOut;
 	}
 
+	/*inline float GetHue() const
+	{
+		float lowest{ static_cast<float>(std::min(r, std::min(g, b))) };
+		float highest{ static_cast<float>(std::max(r, std::max(g, b))) };
+
+		if (lowest == highest)
+			return 0.0f;
+
+		float hue;
+
+		if (highest == r)
+			hue = (g - b) / (highest - lowest);
+		else if (highest == g)
+			hue = 2.0f + (b - r) / (highest - lowest);
+		else
+			hue = 4.0f + (r - g) / (highest - lowest);
+
+		hue *= 60.0f;
+
+		if (hue < 0.0f)
+			hue += 360.0f;
+
+		return std::round(hue);
+	}
+
+	inline float GetSaturation() const
+	{
+		float lowest{ static_cast<float>(std::min(r, std::min(g, b))) };
+		float highest{ static_cast<float>(std::max(r, std::max(g, b))) };
+		return highest == 0.0f ? 0.0f : 1.0f - lowest / highest;
+	}*/
+
+	/*inline float GetValue() const
+	{
+		return std::max(r, std::max(g, b)) / 255.0f;
+	}*/
+
 	inline bool operator==(Color_t other) const
 	{
 		return r == other.r && g == other.g && b == other.b && a == other.a;
@@ -909,6 +991,17 @@ struct Color_t
 	inline std::string ToHexA() const
 	{
 		return std::format("\x8{:02x}{:02x}{:02x}{:02x}", r, g, b, a);
+	}
+
+	inline Color_t Scaled(float scale) const
+	{
+		return
+		{
+			byte(r * scale),
+			byte(g * scale),
+			byte(b * scale),
+			a
+		};
 	}
 
 	inline Color_t Lerp(Color_t to, float t, LerpEnum::LerpEnum eLerp = LerpEnum::All) const
