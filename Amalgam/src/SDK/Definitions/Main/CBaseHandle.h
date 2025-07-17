@@ -10,18 +10,25 @@ public:
 	CBaseHandle(const CBaseHandle& other);
 	CBaseHandle(unsigned long value);
 	CBaseHandle(int iEntry, int iSerialNumber);
+
 	void Init(int iEntry, int iSerialNumber);
 	void Term();
+
 	bool IsValid() const;
+
 	int GetEntryIndex() const;
 	int GetSerialNumber() const;
+
 	int ToInt() const;
+	//unsigned long GetIndex() const;
+
 	bool operator !=(const CBaseHandle& other) const;
 	bool operator ==(const CBaseHandle& other) const;
 	bool operator ==(const IHandleEntity* pEnt) const;
 	bool operator !=(const IHandleEntity* pEnt) const;
 	bool operator <(const CBaseHandle& other) const;
 	bool operator <(const IHandleEntity* pEnt) const;
+
 	const CBaseHandle& operator=(const IHandleEntity* pEntity);
 	const CBaseHandle& Set(const IHandleEntity* pEntity);
 	IHandleEntity* Get() const;
@@ -31,6 +38,11 @@ protected:
 };
 
 #include "ihandleentity.h"
+
+//inline unsigned long CBaseHandle::GetIndex() const
+//{
+//	return m_Index;
+//}
 
 inline CBaseHandle::CBaseHandle()
 {
@@ -149,9 +161,9 @@ public:
 	operator T* ();
 	operator T* () const;
 
-	bool               operator !() const;
-	bool               operator==(T* val) const;
-	bool               operator!=(T* val) const;
+	bool operator !() const;
+	bool operator==(T* val) const;
+	bool operator!=(T* val) const;
 	const CBaseHandle& operator=(const T* val);
 
 	T* operator->() const;
