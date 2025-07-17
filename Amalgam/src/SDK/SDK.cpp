@@ -23,8 +23,6 @@ static BOOL CALLBACK TeamFortressWindow(HWND hWindow, LPARAM lParam)
 	return TRUE;
 }
 
-
-
 void SDK::Output(const char* cFunction, const char* cLog, Color_t tColor,
 	bool bConsole, bool bDebug, bool bToast, bool bMenu, bool bChat, bool bParty, int iMessageBox,
 	const char* sLeft, const char* sRight)
@@ -327,6 +325,93 @@ void SDK::TraceHull(const Vec3& vecStart, const Vec3& vecEnd, const Vec3& vecHul
 #endif
 }
 
+bool SDK::TraceEntityBullet(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, int* pHitHitboxOut)
+{
+	CGameTrace trace;
+	CTraceFilterHitscan filter = {};
+
+	Trace(vFrom, vTo, (MASK_SHOT | CONTENTS_GRATE), &filter, &trace);
+
+	if (trace.m_pEnt == pEntity && !trace.allsolid && !trace.startsolid)
+	{
+		if (pHitHitboxOut)
+			*pHitHitboxOut = trace.hitbox;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool SDK::TraceEntityAutoDet(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo)
+{
+	CGameTrace trace;
+	CTraceFilterWorldCustom filter;
+
+	filter.pSkip = pEntity;
+	Trace(vFrom, vTo, MASK_SOLID, &filter, &trace);
+
+	return trace.m_pEnt == pEntity || trace.fraction > 0.99f;
+}
+
+bool SDK::TraceProjectile(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo)
+{
+	CGameTrace trace;
+	CTraceFilterWorldCustom filter;
+
+	filter.pSkip = pEntity;
+	TraceHull(vFrom, vTo, { -4.0f, -4.0f, -4.0f }, { 4.0f, 4.0f, 4.0f }, MASK_SOLID, &filter, &trace);
+
+	return trace.m_pEnt == pEntity || (trace.fraction > 0.99f && !trace.allsolid && !trace.startsolid);
+}
+
+bool SDK::TraceProjectilePipes(const Vec3& vFrom, const Vec3& vTo, CBaseEntity* pTarget, bool* pHitTarget)
+{
+	CGameTrace trace;
+	CTraceFilterWorldCustom filter;
+
+	filter.pSkip = pTarget;
+
+	TraceHull(vFrom, vTo, { -8.0f, -8.0f, -8.0f }, { 8.0f, 8.0f, 8.0f }, MASK_SOLID, &filter, &trace);
+
+	if (trace.m_pEnt == pTarget)
+	{
+		*pHitTarget = true;
+		return false;
+	}
+
+	return trace.fraction > 0.99f && !trace.startsolid && !trace.allsolid;
+}
+
+bool SDK::TraceFlames(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo)
+{
+	CGameTrace trace;
+	CTraceFilterWorldCustom filter;
+
+	filter.pSkip = pEntity;
+	TraceHull(vFrom, vTo, { -12.0f, -12.0f, -12.0f }, { 12.0f, 12.0f, 12.0f }, MASK_SOLID, &filter, &trace);
+
+	return trace.m_pEnt == pEntity || (trace.fraction > 0.99f && !trace.allsolid && !trace.startsolid);
+}
+
+bool SDK::TraceEntityMelee(CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo)
+{
+	CGameTrace trace;
+	CTraceFilterHitscan filter;
+
+	TraceHull(vFrom, vTo, { -18.0f, -18.0f, -18.0f }, { 18.0f, 18.0f, 18.0f }, MASK_SOLID, &filter, &trace);
+	return trace.m_pEnt == pEntity;
+}
+
+bool SDK::TracePositionWorld(const Vec3& vFrom, const Vec3& vTo)
+{
+	CGameTrace trace;
+	CTraceFilterWorldCustom filter;
+
+	Trace(vFrom, vTo, MASK_SOLID, &filter, &trace);
+	return trace.fraction > 0.99f && !trace.allsolid && !trace.startsolid;
+}
+
 bool SDK::VisPos(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask)
 {
 	CGameTrace trace = {};
@@ -336,7 +421,12 @@ bool SDK::VisPos(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFr
 		return trace.m_pEnt && trace.m_pEnt == pEntity;
 	return true;
 }
+<<<<<<< Updated upstream
 bool SDK::VisPosCollideable(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask)
+=======
+
+bool SDK::VisPosProjectile(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask)
+>>>>>>> Stashed changes
 {
 	CGameTrace trace = {};
 	CTraceFilterCollideable filter = {}; filter.pSkip = pSkip; filter.iType = SKIP_CHECK;
@@ -345,6 +435,7 @@ bool SDK::VisPosCollideable(CBaseEntity* pSkip, const CBaseEntity* pEntity, cons
 		return trace.m_pEnt && trace.m_pEnt == pEntity;
 	return true;
 }
+
 bool SDK::VisPosWorld(CBaseEntity* pSkip, const CBaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo, unsigned int nMask)
 {
 	CGameTrace trace = {};
@@ -401,6 +492,7 @@ int SDK::GetRoundState()
 		return pGameRules->m_iRoundState();
 	return 0;
 }
+
 int SDK::GetWinningTeam()
 {
 	if (auto pGameRules = I::TFGameRules())
@@ -451,7 +543,9 @@ EWeaponType SDK::GetWeaponType(CTFWeaponBase* pWeapon, EWeaponType* pSecondaryTy
 	case TF_WEAPON_BUFF_ITEM:
 	case TF_WEAPON_GRAPPLINGHOOK:
 	case TF_WEAPON_ROCKETPACK:
+	{
 		return EWeaponType::UNKNOWN;
+	}
 	case TF_WEAPON_CLEAVER:
 	case TF_WEAPON_ROCKETLAUNCHER:
 	case TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT:
@@ -465,6 +559,9 @@ EWeaponType SDK::GetWeaponType(CTFWeaponBase* pWeapon, EWeaponType* pSecondaryTy
 	case TF_WEAPON_CANNON:
 	case TF_WEAPON_PIPEBOMBLAUNCHER:
 	case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
+	{
+		return EWeaponType::PROJECTILE;
+	}
 	case TF_WEAPON_DRG_POMSON:
 	case TF_WEAPON_CROSSBOW:
 	case TF_WEAPON_SYRINGEGUN_MEDIC:
@@ -473,7 +570,20 @@ EWeaponType SDK::GetWeaponType(CTFWeaponBase* pWeapon, EWeaponType* pSecondaryTy
 	case TF_WEAPON_JAR_MILK:
 	case TF_WEAPON_JAR_GAS:
 	case TF_WEAPON_LUNCHBOX:
+	{
 		return EWeaponType::PROJECTILE;
+	}
+	default:
+	{
+		int nDamageType = pWeapon->GetDamageType();
+
+		if (nDamageType & DMG_BULLET || nDamageType & DMG_BUCKSHOT)
+		{
+			return EWeaponType::HITSCAN;
+		}
+
+		break;
+	}
 	}
 
 	return EWeaponType::HITSCAN;
@@ -702,6 +812,36 @@ void SDK::FixMovement(CUserCmd* pCmd, const Vec3& vTargetAngle)
 	FixMovement(pCmd, pCmd->viewangles, vTargetAngle);
 }
 
+void SDK::FixMovementAlt(CUserCmd* pCmd, const Vec3& vTargetAngle)
+{
+	Vec3 forward, right;
+	Math::AngleVectors(Vec3(0, vTargetAngle.y, vTargetAngle.z), &forward, &right, nullptr);
+
+	forward.Normalize();
+	right.Normalize();
+
+	const float denom = (forward.y - (right.y / right.x) * forward.x);
+
+	if (right.x != 0.f && denom != 0.f)
+	{
+		Vec3 wish_forward, wish_right;
+		Math::AngleVectors(QAngle(0, pCmd->viewangles.y, pCmd->viewangles.z), &wish_forward, &wish_right, nullptr);
+
+		wish_forward.Normalize();
+		wish_right.Normalize();
+
+		Vec3 wish_vel;
+
+		for (int32_t i = 0; i < 2; i++)
+			wish_vel[i] = wish_forward[i] * pCmd->forwardmove + wish_right[i] * pCmd->sidemove;
+
+		wish_vel.z = 0.f;
+
+		pCmd->forwardmove = (wish_vel.y - (right.y / right.x) * wish_vel.x) / denom;
+		pCmd->sidemove = (wish_vel.x - forward.x * pCmd->forwardmove) / right.x;
+	}
+}
+
 bool SDK::StopMovement(CTFPlayer* pLocal, CUserCmd* pCmd)
 {
 	if (pLocal->m_vecVelocity().IsZero())
@@ -762,8 +902,171 @@ void SDK::WalkTo(CUserCmd* pCmd, CTFPlayer* pLocal, Vec3& vTo, float flScale)
 	WalkTo(pCmd, pLocal, vLocalPos, vTo, flScale);
 }
 
+void SDK::WalkToFixAntiAim(CUserCmd* pCmd, const Vec3& vTargetAngle)
+{
+	float flOriginalForward = pCmd->forwardmove;
+	float flOriginalSide = pCmd->sidemove;
 
+	if (flOriginalForward == 0.0f && flOriginalSide == 0.0f)
+		return;
 
+	float flOriginalYaw = DEG2RAD(pCmd->viewangles.y);
+	float flNewYaw = DEG2RAD(vTargetAngle.y);
+
+	pCmd->forwardmove = (flOriginalForward * cos(flNewYaw - flOriginalYaw)) + (flOriginalSide * sin(flNewYaw - flOriginalYaw));
+	pCmd->sidemove = (flOriginalSide * cos(flNewYaw - flOriginalYaw)) - (flOriginalForward * sin(flNewYaw - flOriginalYaw));
+
+	bool bCurPitchFlipped = fabsf(Math::NormalizeAngle(pCmd->viewangles.x)) > 90.f;
+	bool bTargetPitchFlipped = fabsf(Math::NormalizeAngle(vTargetAngle.x)) > 90.f;
+
+	if (bCurPitchFlipped != bTargetPitchFlipped)
+	{
+		pCmd->forwardmove *= -1.0f;
+	}
+}
+
+int SDK::TimeToTicks(float time)
+{
+	return static_cast<int>(0.5f + time / I::GlobalVars->interval_per_tick);
+}
+
+float SDK::TicksToTime(int tick)
+{
+	return I::GlobalVars->interval_per_tick * static_cast<float>(tick);
+}
+
+float SDK::GetLerp()
+{
+	static auto cl_interp = U::ConVars.FindVar("cl_interp");
+	static auto cl_interp_ratio = U::ConVars.FindVar("cl_interp_ratio");
+	static auto cl_updaterate = U::ConVars.FindVar("cl_updaterate");
+
+	return std::max(cl_interp->GetFloat(), cl_interp_ratio->GetFloat() / cl_updaterate->GetFloat());
+}
+
+float SDK::GetLatency()
+{
+	INetChannelInfo* net = I::EngineClient->GetNetChannelInfo();
+
+	if (!net)
+		return 0.0f;
+
+	return net->GetLatency(FLOW_INCOMING) + net->GetLatency(FLOW_OUTGOING);
+}
+
+float SDK::GetGravity()
+{
+	static auto sv_gravity = U::ConVars.FindVar("sv_gravity");
+	return sv_gravity->GetFloat();
+}
+
+float SDK::GetServerTime()
+{
+	return TicksToTime(I::ClientState->m_ClockDriftMgr.m_nServerTick + 1);
+}
+
+void SDK::Friction(Vec3& velocity, float surface_friction)
+{
+	float speed = velocity.Length();
+
+	if (speed < 0.1f)
+		return;
+
+	static auto sv_friction = U::ConVars.FindVar("sv_friction");
+	const float friction = sv_friction->GetFloat() * surface_friction;
+
+	static auto sv_stopspeed = U::ConVars.FindVar("sv_stopspeed");
+	const float control = (speed < sv_stopspeed->GetFloat()) ? sv_stopspeed->GetFloat() : speed;
+
+	const float drop = control * friction * I::GlobalVars->interval_per_tick;
+	float new_speed = std::max(0.0f, speed - drop);
+
+	if (new_speed != speed) 
+	{
+		new_speed /= speed;
+		velocity *= new_speed;
+	}
+}
+
+bool SDK::IsLoopback()
+{
+	INetChannelInfo* net = I::EngineClient->GetNetChannelInfo();
+	return net && net->IsLoopback();
+}
+
+float SDK::AirburstDamageForce(Vec3& size, float damage, float scale)
+{
+	float force = damage * (static_cast<float>((48 * 48 * 82.0)) / (size.x * size.y * size.z)) * scale;
+	force = std::min(force, 1000.0f);
+	return force;
+}
+
+<<<<<<< Updated upstream
+=======
+class CTraceFilterSetup : public ITraceFilter // trace filter solely for GetProjectileFireSetup
+{
+public:
+	bool ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask) override;
+	TraceType_t GetTraceType() const override;
+	CBaseEntity* pSkip = nullptr;
+};
+
+bool CTraceFilterSetup::ShouldHitEntity(IHandleEntity* pServerEntity, int nContentsMask)
+{
+	if (!pServerEntity || pServerEntity == pSkip)
+		return false;
+
+	auto pEntity = reinterpret_cast<CBaseEntity*>(pServerEntity);
+
+	switch (pEntity->GetClassID())
+	{
+	case ETFClassID::CTFAmmoPack:
+	case ETFClassID::CFuncAreaPortalWindow:
+	case ETFClassID::CFuncRespawnRoomVisualizer:
+	case ETFClassID::CTFReviveMarker: return false;
+	case ETFClassID::CTFMedigunShield:
+	case ETFClassID::CObjectSentrygun:
+	case ETFClassID::CObjectDispenser:
+	case ETFClassID::CObjectTeleporter: return true;
+	case ETFClassID::CTFPlayer:
+	{
+		auto pLocal = H::Entities.GetLocal();
+
+		const int iTargetTeam = pEntity->m_iTeamNum(), iLocalTeam = pLocal ? pLocal->m_iTeamNum() : iTargetTeam;
+		return iTargetTeam != iLocalTeam;
+	}
+	}
+
+	return true;
+}
+
+TraceType_t CTraceFilterSetup::GetTraceType() const
+{
+	return TRACE_EVERYTHING;
+}
+
+bool SDK::DoesHitEntity(CBaseEntity* Target, Vec3 Point, Vec3 predicted, float Distance)
+{
+	Vec3 max = Target->m_vecMaxs();
+	predicted.z += max.z / 2;
+
+	trace_t tr;
+
+	Ray_t ray;
+	ray.Init(Point, predicted);
+
+	ITraceFilter* filter{};
+	//filter = (Target, COLLISION_GROUP_PROJECTILE);
+
+	I::EngineTrace->TraceRay(ray, MASK_SOLID, filter, &tr);
+
+	if (!tr.DidHit())
+		return true;
+
+	return false;
+}
+
+>>>>>>> Stashed changes
 void SDK::GetProjectileFireSetup(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vOffset, Vec3& vPosOut, Vec3& vAngOut, bool bPipes, bool bInterp, bool bAllowFlip)
 {
 	static auto cl_flipviewmodels = U::ConVars.FindVar("cl_flipviewmodels");
@@ -789,4 +1092,429 @@ void SDK::GetProjectileFireSetup(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vO
 
 		vAngOut = Math::VectorAngles(vEndPos - vPosOut);
 	}
+<<<<<<< Updated upstream
 }
+=======
+}
+
+void SDK::GetProjectileFireSetupAirblast(CTFPlayer* pPlayer, const Vec3& vAngIn, Vec3 vPosIn, Vec3& vAngOut, bool bInterp)
+{
+	const Vec3 vShootPos = bInterp ? pPlayer->GetEyePosition() : pPlayer->GetShootPos();
+
+	Vec3 vForward; Math::AngleVectors(vAngIn, &vForward);
+
+	Vec3 vEndPos = vShootPos + (vForward * MAX_TRACE_LENGTH);
+	CGameTrace trace = {};
+	CTraceFilterWorldAndPropsOnly filter = {};
+	Trace(vShootPos, vEndPos, MASK_SOLID, &filter, &trace);
+
+	Math::VectorAngles(trace.endpos - vPosIn, vAngOut);
+}
+
+float SDK::CalculateSplashRadiusDamageFalloff(CTFWeaponBase* pWeapon, CTFPlayer* pAttacker, CTFWeaponBaseGrenadeProj* pProjectile, float flRadius)
+{
+	float flFalloff{ 0.0f };
+	const int dmgType = pProjectile->GetDamageType();
+
+	if (dmgType & DMG_RADIUS_MAX)
+		flFalloff = 0.0f;
+	else if (dmgType & DMG_HALF_FALLOFF)
+		flFalloff = 0.5f;
+	else if (flRadius)
+		flFalloff = pProjectile->m_flDamage() / flRadius;
+	else
+		flFalloff = 1.0f;
+
+	if (pWeapon)
+	{
+		float flFalloffMod = 1.f;
+		AttribHookValue(flFalloffMod, "mult_dmg_falloff", pWeapon);
+		if (flFalloffMod != 1.f)
+			flFalloff += flFalloffMod;
+	}
+
+	if (pAttacker && pAttacker->InCond(TF_COND_RUNE_PRECISION))
+		flFalloff = 1.0f;
+	return flFalloff;
+}
+
+float SDK::CalculateSplashRadiusDamage(CTFWeaponBase* pWeapon, CTFPlayer* pAttacker, CTFWeaponBaseGrenadeProj* pProjectile, float flRadius, float flDist, float& flDamageNoBuffs, bool bSelf)
+{
+	float flFalloff{ CalculateSplashRadiusDamageFalloff(pWeapon, pAttacker, pProjectile, flRadius) };
+	float flDamage{ Math::RemapVal(flDist, 0.f, flRadius, pProjectile->m_flDamage(), pProjectile->m_flDamage() * flFalloff) };
+	flDamageNoBuffs = flDamage;
+
+	bool bCrit{ (pProjectile->GetDamageType() & DMG_CRITICAL) > 0 };
+	if (bCrit || pAttacker->IsMiniCritBoosted())
+	{
+		float flDamageBonus{ 0.f };
+		if (bCrit)
+		{
+			flDamageBonus = (TF_DAMAGE_CRIT_MULTIPLIER - 1.f) * flDamage;
+		}
+		else
+		{
+			flDamageBonus = (TF_DAMAGE_MINICRIT_MULTIPLIER - 1.f) * flDamage;
+		}
+
+		flDamage += flDamageBonus;
+	}
+
+	// Grenades & Pipebombs do less damage to ourselves.
+	if (bSelf && pWeapon)
+	{
+		switch (pWeapon->GetWeaponID())
+		{
+		case TF_WEAPON_PIPEBOMBLAUNCHER:
+		case TF_WEAPON_GRENADELAUNCHER:
+		case TF_WEAPON_CANNON:
+		case TF_WEAPON_STICKBOMB:
+			flDamage *= 0.75f;
+			flDamageNoBuffs *= 0.75f;
+			break;
+		}
+	}
+	return flDamage;
+}
+
+bool SDK::WeaponDoesNotUseAmmo(CTFWeaponBase* pWeapon, bool bIncludeInfiniteAmmo)
+{
+	if (!pWeapon)
+		return false;
+
+	if (pWeapon->GetSlot() == SLOT_MELEE)
+		return true;
+
+	switch (pWeapon->m_iItemDefinitionIndex())
+	{
+	case Soldier_s_TheBuffBanner:
+	case Soldier_s_FestiveBuffBanner:
+	case Soldier_s_TheBattalionsBackup:
+	case Soldier_s_TheConcheror:
+	case Demoman_s_TheTideTurner:
+	case Demoman_s_TheCharginTarge:
+	case Demoman_s_TheSplendidScreen:
+	case Demoman_s_FestiveTarge:
+	case Demoman_m_TheBootlegger:
+	case Demoman_m_AliBabasWeeBooties:
+	case Engi_s_TheWrangler:
+	case Engi_s_FestiveWrangler:
+	case Sniper_s_CozyCamper:
+	case Sniper_s_DarwinsDangerShield:
+	case Sniper_s_TheRazorback:
+	case Pyro_s_ThermalThruster: return true;
+	default:
+	{
+		switch (pWeapon->GetWeaponID())
+		{
+		case TF_WEAPON_PARTICLE_CANNON:
+		case TF_WEAPON_RAYGUN:
+		case TF_WEAPON_DRG_POMSON: return bIncludeInfiniteAmmo;
+		case TF_WEAPON_FLAREGUN_REVENGE:
+		case TF_WEAPON_MEDIGUN:
+		case TF_WEAPON_PDA:
+		case TF_WEAPON_PDA_ENGINEER_BUILD:
+		case TF_WEAPON_PDA_ENGINEER_DESTROY:
+		case TF_WEAPON_PDA_SPY:
+		case TF_WEAPON_PDA_SPY_BUILD:
+		case TF_WEAPON_BUILDER:
+		case TF_WEAPON_INVIS:
+		case TF_WEAPON_LUNCHBOX:
+		case TF_WEAPON_THROWABLE:
+		case TF_WEAPON_JAR:
+		case TF_WEAPON_JAR_GAS:
+		case TF_WEAPON_JAR_MILK:
+		case TF_WEAPON_GRAPPLINGHOOK: return true;
+		default: return false;
+		}
+		break;
+	}
+	}
+}
+
+bool SDK::WeaponDoesNotUseAmmo(int WeaponID, int DefIdx, bool bIncludeInfiniteAmmo)
+{
+	switch (DefIdx)
+	{
+	case Soldier_s_TheBuffBanner:
+	case Soldier_s_FestiveBuffBanner:
+	case Soldier_s_TheBattalionsBackup:
+	case Soldier_s_TheConcheror:
+	case Demoman_s_TheTideTurner:
+	case Demoman_s_TheCharginTarge:
+	case Demoman_s_TheSplendidScreen:
+	case Demoman_s_FestiveTarge:
+	case Demoman_m_TheBootlegger:
+	case Demoman_m_AliBabasWeeBooties:
+	case Engi_s_TheWrangler:
+	case Engi_s_FestiveWrangler:
+	case Sniper_s_CozyCamper:
+	case Sniper_s_DarwinsDangerShield:
+	case Sniper_s_TheRazorback:
+	case Pyro_s_ThermalThruster: return true;
+	default:
+	{
+		switch (WeaponID)
+		{
+		case TF_WEAPON_PARTICLE_CANNON:
+		case TF_WEAPON_RAYGUN:
+		case TF_WEAPON_DRG_POMSON: return bIncludeInfiniteAmmo;
+		case TF_WEAPON_FLAREGUN_REVENGE:
+		case TF_WEAPON_MEDIGUN:
+		case TF_WEAPON_PDA:
+		case TF_WEAPON_PDA_ENGINEER_BUILD:
+		case TF_WEAPON_PDA_ENGINEER_DESTROY:
+		case TF_WEAPON_PDA_SPY:
+		case TF_WEAPON_PDA_SPY_BUILD:
+		case TF_WEAPON_BUILDER:
+		case TF_WEAPON_INVIS:
+		case TF_WEAPON_LUNCHBOX:
+		case TF_WEAPON_THROWABLE:
+		case TF_WEAPON_JAR:
+		case TF_WEAPON_JAR_GAS:
+		case TF_WEAPON_JAR_MILK:
+		case TF_WEAPON_GRAPPLINGHOOK: return true;
+		default: return false;
+		}
+		break;
+	}
+	}
+}
+
+// Is there a way of doing this without hardcoded numbers???
+int SDK::GetWeaponMaxReserveAmmo(int WeaponID, int DefIdx)
+{
+	switch (DefIdx)
+	{
+	case Engi_m_TheWidowmaker:
+	case Engi_s_TheShortCircuit:
+		return 200;
+	case Scout_m_ForceANature:
+	case Scout_m_FestiveForceANature:
+	case Scout_m_BackcountryBlaster:
+		return 32;
+	case Demoman_s_TheQuickiebombLauncher:
+		return 24;
+	case Demoman_s_TheScottishResistance:
+		return 36;
+	case Demoman_s_StickyJumper:
+		return 72;
+	case Soldier_m_RocketJumper:
+		return 60;
+	default:
+	{
+		switch (WeaponID)
+		{
+		case TF_WEAPON_MINIGUN:
+		case TF_WEAPON_PISTOL:
+		case TF_WEAPON_FLAMETHROWER:
+			return 200;
+		case TF_WEAPON_SYRINGEGUN_MEDIC:
+			return 150;
+		case TF_WEAPON_SMG:
+			return 75;
+		case TF_WEAPON_FLAME_BALL:
+			return 40;
+		case TF_WEAPON_CROSSBOW:
+			return 38;
+		case TF_WEAPON_HANDGUN_SCOUT_SECONDARY:
+		case TF_WEAPON_PISTOL_SCOUT:
+		case TF_WEAPON_HANDGUN_SCOUT_PRIMARY:
+			return 36;
+		case TF_WEAPON_SCATTERGUN:
+		case TF_WEAPON_PEP_BRAWLER_BLASTER:
+		case TF_WEAPON_SODA_POPPER:
+		case TF_WEAPON_SHOTGUN_HWG:
+		case TF_WEAPON_SHOTGUN_PRIMARY:
+		case TF_WEAPON_SHOTGUN_PYRO:
+		case TF_WEAPON_SHOTGUN_SOLDIER:
+			return 32;
+		case TF_WEAPON_SNIPERRIFLE:
+		case TF_WEAPON_SNIPERRIFLE_CLASSIC:
+		case TF_WEAPON_SNIPERRIFLE_DECAP:
+			return 25;
+		case TF_WEAPON_STICKBOMB:
+		case TF_WEAPON_STICKY_BALL_LAUNCHER:
+		case TF_WEAPON_REVOLVER:
+			return 24;
+		case TF_WEAPON_ROCKETLAUNCHER:
+		case TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT:
+			return 20;
+		case TF_WEAPON_CANNON:
+		case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
+		case TF_WEAPON_GRENADELAUNCHER:
+		case TF_WEAPON_FLAREGUN:
+			return 16;
+		case TF_WEAPON_COMPOUND_BOW:
+			return 12;
+		default:
+			break;
+		}
+		break;
+	}
+	}
+
+	return 32;
+}
+
+std::string SDK::GetLevelName()
+{
+	const std::string name = I::EngineClient->GetLevelName();
+	const char* data = name.data();
+	const size_t length = name.length();
+	size_t slash = 0;
+	size_t bsp = length;
+
+	for (size_t i = length - 1; i != std::string::npos; --i)
+	{
+		if (data[i] == '/')
+		{
+			slash = i + 1;
+			break;
+		}
+		if (data[i] == '.')
+			bsp = i;
+	}
+
+	return { data + slash, bsp - slash };
+}
+
+bool SDK::IsWeaponHitscan(CTFWeaponBase* wep)
+{
+	if (!wep || wep->GetWeaponID() == TF_WEAPON_MEDIGUN || IsWeaponProjectile(wep) || IsWeaponMelee(wep)) 
+		return false;
+
+	return (wep->GetDamageType() & DMG_BULLET) || (wep->GetDamageType() & DMG_BUCKSHOT);
+}
+
+bool SDK::IsWeaponMelee(CTFWeaponBase* wep)
+{
+	if (!wep)
+		return false;
+
+	return wep->GetSlot() == 2;
+}
+
+bool SDK::IsWeaponProjectile(CTFWeaponBase* wep)
+{
+	if (!wep)
+		return false;
+
+	switch (wep->GetWeaponID())
+	{
+	case TF_WEAPON_ROCKETLAUNCHER:
+	{
+		if (wep->m_iItemDefinitionIndex() == Soldier_m_RocketJumper)
+			return false;
+
+		return true;
+	}
+	case TF_WEAPON_PIPEBOMBLAUNCHER:
+	{
+		if (wep->m_iItemDefinitionIndex() == Demoman_s_StickyJumper)
+			return false;
+
+		return true;
+	}
+	case TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT:
+	case TF_WEAPON_GRENADELAUNCHER:
+	case TF_WEAPON_FLAREGUN:
+	case TF_WEAPON_COMPOUND_BOW:
+	case TF_WEAPON_CROSSBOW:
+	case TF_WEAPON_PARTICLE_CANNON:
+	case TF_WEAPON_DRG_POMSON:
+	case TF_WEAPON_RAYGUN:
+	case TF_WEAPON_FLAREGUN_REVENGE:
+	case TF_WEAPON_CANNON:
+	case TF_WEAPON_SYRINGEGUN_MEDIC:
+	case TF_WEAPON_FLAME_BALL:
+	case TF_WEAPON_FLAMETHROWER:
+	case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool SDK::IsWeaponChargeable(CTFWeaponBase* wep)
+{
+	if (!wep)
+		return false;
+
+	switch (wep->GetWeaponID())
+	{
+	case TF_WEAPON_PIPEBOMBLAUNCHER:
+	case TF_WEAPON_COMPOUND_BOW:
+	case TF_WEAPON_CANNON:
+	case TF_WEAPON_SNIPERRIFLE_CLASSIC:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/*bool SDK::IsWeaponCapableOfHeadshot(CTFWeaponBase* pWeapon)
+{
+	auto pOwner = pWeapon->m_hOwnerEntity().Get();
+
+	if (!pOwner)
+		return false;
+
+	bool bMaybe = false, bIsSniperRifle = false, bIsRevolver = false;
+
+	switch (pWeapon->GetWeaponID())
+	{
+	case TF_WEAPON_COMPOUND_BOW: 
+		return true;
+	case TF_WEAPON_SNIPERRIFLE:
+	case TF_WEAPON_SNIPERRIFLE_CLASSIC:
+	case TF_WEAPON_SNIPERRIFLE_DECAP: 
+		bMaybe = bIsSniperRifle = pOwner->As<C_TFPlayer>()->IsZoomed();
+		break;
+	case TF_WEAPON_REVOLVER: 
+		bMaybe = bIsRevolver = true; 
+		break;
+	default: break;
+	}
+
+	if (bMaybe)
+	{
+		int nWeaponMode = static_cast<int>(SDKUtils::AttribHookValue(0.0f, "set_weapon_mode", pWeapon));
+
+		if (bIsSniperRifle)
+			return nWeaponMode != 1;
+
+		else if (bIsRevolver)
+			return nWeaponMode == 1;
+	}
+
+	return false;
+}*/
+
+/*bool SDK::IsBehindAndFacingTarget(const Vec3& vPlayerCenter, const Vec3& vTargetCenter, const Vec3& vPlayerViewAngles, const Vec3& vTargetEyeAngles)
+{
+	Vec3 vToTarget = {};
+
+	vToTarget = vTargetCenter - vPlayerCenter;
+	vToTarget.z = 0.0f;
+	vToTarget.NormalizeInPlace();
+
+	Vec3 vPlayerForward = {};
+	Math::AngleVectors(vPlayerViewAngles, &vPlayerForward);
+
+	vPlayerForward.z = 0.0f;
+	vPlayerForward.NormalizeInPlace();
+
+	Vec3 vTargetForward = {};
+	Math::AngleVectors(vTargetEyeAngles, &vTargetForward);
+
+	vTargetForward.z = 0.0f;
+	vTargetForward.NormalizeInPlace();
+
+	float flPosVsTargetViewDot = vToTarget.Dot(vTargetForward);
+	float flPosVsOwnerViewDot = vToTarget.Dot(vPlayerForward);
+	float flViewAnglesDot = vTargetForward.Dot(vPlayerForward);
+
+	return flPosVsTargetViewDot > 0.0f && flPosVsOwnerViewDot > 0.5f && flViewAnglesDot > -0.3f;
+}*/
+>>>>>>> Stashed changes
