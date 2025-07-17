@@ -48,6 +48,8 @@ void CNoSpreadProjectile::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCm
 		case TF_WEAPON_SYRINGEGUN_MEDIC:
 			vAngAdd.x += SDK::RandomFloat(-1.5f, 1.5f);
 			vAngAdd.y += SDK::RandomFloat(-1.5f, 1.5f);
+			//Math::ClampAngles(vAngAdd);
+			//break;
 		}
 
 		if (!vAngAdd.IsZero())
