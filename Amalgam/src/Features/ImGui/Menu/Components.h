@@ -1845,7 +1845,256 @@ namespace ImGui
 		return bReturn;
 	}
 
+<<<<<<< Updated upstream
 	inline bool ColorPicker(const char* sLabel, Color_t* pColor, bool bTooltip = true, ImVec2 vSize = { H::Draw.Scale(12), H::Draw.Scale(12) })
+=======
+	inline bool FSDropdown(const char* sLabel, int* pVar, std::vector<const char*> vEntries = {}, int iFlags = FDropdownEnum::None, int iSizeOffset = 0, bool* pHovered = nullptr)
+	{
+		auto uHash = FNV1A::Hash32Const(sLabel);
+		bool bReturn = false;
+
+		if (Transparent || Disabled)
+			PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
+
+		bool bTitle = sLabel[0] != '#';
+
+		ImVec2 vSize = { GetWindowWidth(), H::Draw.Scale(bTitle ? 40 : 24) };
+		if (iFlags & (FDropdownEnum::Left | FDropdownEnum::Right))
+			vSize.x = vSize.x / 2 - GetStyle().WindowPadding.x * 1.5f;
+		else
+			vSize.x -= GetStyle().WindowPadding.x * 2.f;
+		if (iFlags & FDropdownEnum::Right)
+			SameLine(vSize.x + GetStyle().WindowPadding.x * 2.f);
+		iSizeOffset = strstr(sLabel, "## Bind") ? 0 : H::Draw.Scale(iSizeOffset, Scale_Round);
+		vSize.x += iSizeOffset;
+
+		ImVec2 vOriginalPos = GetCursorPos();
+		DebugShift({ 0, GetStyle().WindowPadding.y });
+
+		if (Disabled)
+		{	// lol
+			Button("##", vSize);
+			SetCursorPos(vOriginalPos);
+			DebugShift({ 0, GetStyle().WindowPadding.y });
+		}
+
+		PushStyleVar(ImGuiStyleVar_FramePadding, { 0.f, H::Draw.Scale(bTitle ? 13.5f : 5.5f) });
+		if (vEntries.empty())
+		{
+			PushStyleColor(ImGuiCol_PopupBg, {});
+			PushStyleVar(ImGuiStyleVar_WindowPadding, { GetStyle().WindowPadding.x, 0 });
+		}
+		PushItemWidth(vSize.x);
+
+		static std::string sPreview = "", sInput = "", sTab = "\n";
+		if (BeginCombo(std::format("##{}", sLabel).c_str(), "", ImGuiComboFlags_CustomPreview | ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_HeightLarge))
+		{
+			if (!mActiveMap[uHash])
+				sPreview = sInput = "";
+
+			mActiveMap[uHash] = true;
+
+			// this textinput is being used as a temporary measure to prevent the main window drawing over the popup
+			ImVec2 vOriginalPos2 = GetCursorPos();
+			SetCursorPos({ -1000, vEntries.empty() ? -100 : GetScrollY() }); // lol
+			if (!IsAnyItemActive())
+				SetKeyboardFocusHere();
+			bool bEnter = InputText("##FSDropdown", &sInput, ImGuiInputTextFlags_EnterReturnsTrue);
+
+			try
+			{
+				int check = atoi(sInput.c_str());
+			}
+			catch (const std::invalid_argument&)
+			{
+				// tf are you trying to type?
+				bEnter = false;
+			}
+
+			if (sInput != sTab)
+			{
+				sPreview = sInput;
+				sTab = "\n";
+			}
+			SetCursorPos(vOriginalPos2);
+
+			auto uPreviewHash = FNV1A::Hash32(sPreview.c_str());
+			std::deque<std::string> vValid = {};
+			{
+				std::string sSearch = sInput;
+				std::transform(sSearch.begin(), sSearch.end(), sSearch.begin(), ::tolower);
+				for (auto& sEntry : vEntries)
+				{
+					if (FNV1A::Hash32(sEntry) == FNV1A::Hash32Const("##Divider"))
+					{
+						vValid.push_back(sEntry);
+						continue;
+					}
+
+					std::string sEntryLower = sEntry;
+					std::transform(sEntryLower.begin(), sEntryLower.end(), sEntryLower.begin(), ::tolower);
+					if (sEntryLower.find(sSearch) != std::string::npos)
+						vValid.push_back(sEntry);
+				}
+			}
+
+			if (!vValid.empty() && FNV1A::Hash32(vValid.front().c_str()) == FNV1A::Hash32Const("##Divider"))
+				vValid.pop_front();
+			if (!vValid.empty() && FNV1A::Hash32(vValid.back().c_str()) == FNV1A::Hash32Const("##Divider"))
+				vValid.pop_back();
+			if (!vValid.empty())
+			{
+				if (U::KeyHandler.Pressed(VK_TAB))
+				{
+					int iIndex = -1;
+					for (int i = 0; i < vValid.size(); i++)
+					{
+						if (uPreviewHash == FNV1A::Hash32(vValid[i].c_str()))
+							iIndex = i;
+					}
+					if (iIndex == -1 && U::KeyHandler.Down(VK_SHIFT))
+						iIndex = 0;
+					while (true)
+					{
+						iIndex += !U::KeyHandler.Down(VK_SHIFT) ? 1 : -1;
+						if (iIndex < 0)
+							iIndex += int(vValid.size());
+						else if (iIndex >= vValid.size())
+							iIndex -= int(vValid.size());
+						if (FNV1A::Hash32(vValid[iIndex].c_str()) == FNV1A::Hash32Const("##Divider"))
+							continue;
+						sPreview = vValid[iIndex];
+						sTab = sInput;
+						break;
+					}
+				}
+
+				DebugDummy({ 0, H::Draw.Scale(8) });
+				PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0, H::Draw.Scale(19) });
+
+				bool bDivider = false;
+				for (int i = 0; i < vValid.size(); i++)
+				{
+					auto& sEntry = vValid[i];
+					if (FNV1A::Hash32(sEntry.c_str()) == FNV1A::Hash32Const("##Divider"))
+					{
+						if (!bDivider)
+						{
+							ImVec2 vDrawPos = GetDrawPos(); float flPosY = GetCursorPosY();
+							ImColor tInactive = F::Render.Inactive; tInactive.Value.w *= GetStyle().Alpha;
+							GetWindowDrawList()->AddRectFilled({ vDrawPos.x + H::Draw.Scale(17), vDrawPos.y + flPosY }, { vDrawPos.x + GetWindowWidth() - H::Draw.Scale(17), vDrawPos.y + flPosY + H::Draw.Scale(1) }, tInactive);
+							DebugDummy({});
+						}
+						bDivider = true;
+						continue;
+					}
+					else
+						bDivider = false;
+
+					if (bEnter && !(iFlags & FSDropdownEnum::Custom))
+					{
+						*pVar = atoi(sEntry.c_str()); bReturn = true;
+						CloseCurrentPopup(); break;
+					}
+
+					bool bActive = FNV1A::Hash32(std::to_string(*pVar).c_str()) == FNV1A::Hash32(sEntry.c_str());
+					ImVec2 vOriginalPos3 = GetCursorPos();
+					if (FSelectable(std::format("##{}{}", sEntry, i).c_str(), nullptr, 0, bActive))
+						*pVar = atoi(sEntry.c_str()), bReturn = true;
+
+					ImVec2 vOriginalPos4 = GetCursorPos();
+					SetCursorPos({ vOriginalPos3.x + H::Draw.Scale(18), vOriginalPos3.y });
+					TextColored(bActive ? F::Render.Active : F::Render.Inactive, sEntry.c_str());
+					SameLine(); DebugDummy({ H::Draw.Scale(!GetCurrentWindow()->ScrollbarY ? 16 : 9), 0 });
+					SetCursorPos(vOriginalPos4);
+				}
+
+				PopStyleVar();
+				SetCursorPosY(GetCursorPosY() - H::Draw.Scale(10)); DebugDummy({});
+			}
+
+			if ((bEnter || iFlags & FSDropdownEnum::AutoUpdate) && (iFlags & FSDropdownEnum::Custom || vEntries.empty()))
+				*pVar = atoi(sPreview.c_str()); bReturn = true;
+			if (bEnter || U::KeyHandler.Down(VK_ESCAPE))
+				CloseCurrentPopup();
+
+			EndCombo();
+		}
+		else
+			mActiveMap[uHash] = false;
+		if (!Disabled && IsItemHovered())
+			SetMouseCursor(ImGuiMouseCursor_TextInput);
+		if (pHovered)
+			*pHovered = IsItemHovered();
+		if (BeginComboPreview())
+		{
+			ImVec2 vOriginalPos2 = GetCursorPos();
+
+			if (bTitle)
+			{
+				SetCursorPos({ vOriginalPos2.x + H::Draw.Scale(12), vOriginalPos2.y - H::Draw.Scale(5) });
+				PushFont(F::Render.FontSmall);
+				TextColored(F::Render.Inactive, TruncateText(StripDoubleHash(sLabel), vSize.x - H::Draw.Scale(vEntries.empty() ? 24 : 45)).c_str());
+				PopFont();
+
+				SetCursorPos({ vOriginalPos2.x + H::Draw.Scale(12), vOriginalPos2.y + H::Draw.Scale(8) });
+				TextUnformatted(TruncateText(mActiveMap[uHash] ? sPreview : std::to_string(*pVar), vSize.x - H::Draw.Scale(vEntries.empty() ? 24 : 45)).c_str());
+
+				if (!vEntries.empty())
+				{
+					SetCursorPos({ vOriginalPos2.x + vSize.x - H::Draw.Scale(24), vOriginalPos2.y - H::Draw.Scale(1) });
+					IconImage(mActiveMap[uHash] ? ICON_MD_KEYBOARD_ARROW_UP : ICON_MD_KEYBOARD_ARROW_DOWN);
+				}
+
+				if (mActiveMap[uHash] || iFlags & FSDropdownEnum::Custom || vEntries.empty())
+				{
+					ImVec2 vDrawPos = GetDrawPos() + vOriginalPos2 + ImVec2(H::Draw.Scale(12), H::Draw.Scale(22));
+					vDrawPos.x = floorf(vDrawPos.x), vDrawPos.y = floorf(vDrawPos.y);
+					GetWindowDrawList()->AddRectFilled({ vDrawPos.x, vDrawPos.y }, { vDrawPos.x + vSize.x - H::Draw.Scale(vEntries.empty() ? 25 : 45), vDrawPos.y + H::Draw.Scale(2) }, mActiveMap[uHash] ? F::Render.Active : F::Render.Inactive);
+				}
+			}
+			else
+			{
+				SetCursorPos({ vOriginalPos2.x + H::Draw.Scale(12), vOriginalPos2.y });
+				TextUnformatted(TruncateText(mActiveMap[uHash] ? sPreview : std::to_string(*pVar), vSize.x - H::Draw.Scale(vEntries.empty() ? 24 : 45)).c_str());
+
+				if (!vEntries.empty())
+				{
+					SetCursorPos({ vOriginalPos2.x + vSize.x - H::Draw.Scale(24), vOriginalPos2.y - H::Draw.Scale(1) });
+					IconImage(mActiveMap[uHash] ? ICON_MD_KEYBOARD_ARROW_UP : ICON_MD_KEYBOARD_ARROW_DOWN);
+				}
+
+				if (mActiveMap[uHash] || iFlags & FSDropdownEnum::Custom || vEntries.empty())
+				{
+					ImVec2 vDrawPos = GetDrawPos() + vOriginalPos2 + ImVec2(H::Draw.Scale(12), H::Draw.Scale(14));
+					vDrawPos.x = floorf(vDrawPos.x), vDrawPos.y = floorf(vDrawPos.y);
+					GetWindowDrawList()->AddRectFilled({ vDrawPos.x, vDrawPos.y }, { vDrawPos.x + vSize.x - H::Draw.Scale(vEntries.empty() ? 25 : 45), vDrawPos.y + H::Draw.Scale(2) }, mActiveMap[uHash] ? F::Render.Active : F::Render.Inactive);
+				}
+			}
+
+			EndComboPreview();
+		}
+
+		PopItemWidth();
+		if (vEntries.empty())
+		{
+			PopStyleColor();
+			PopStyleVar();
+		}
+		PopStyleVar();
+
+		SetCursorPos(vOriginalPos);
+		AddRowSize(vOriginalPos, { vSize.x, vSize.y + GetStyle().WindowPadding.y });
+		DebugDummy({ vSize.x, GetRowSize(vSize.y + GetStyle().WindowPadding.y) });
+
+		if (Transparent || Disabled)
+			PopStyleVar();
+
+		return bReturn;
+	}
+
+	inline bool ColorPicker(const char* sLabel, Color_t* pColor, bool bTooltip = true, int iFlags = FColorPickerEnum::None, ImVec2 vSize = { H::Draw.Scale(12), H::Draw.Scale(12) })
+>>>>>>> Stashed changes
 	{
 		ImVec2 vOriginalPos = GetCursorPos();
 		if (Disabled)
@@ -2602,6 +2851,7 @@ namespace ImGui
 	WRAPPER(FSlider, int, VA_LIST(int iFlags = 0, const char* sFormatOverride = nullptr), VA_LIST(&val, var.m_unMin.i, var.m_unMax.i, var.m_unStep.i, sFormatOverride ? sFormatOverride : var.m_sExtra, iFlags))
 	WRAPPER(FDropdown, int, VA_LIST(int iFlags = 0, int iSizeOffset = 0), VA_LIST(&val, var.m_vValues, {}, iFlags, iSizeOffset, var.m_sExtra ? var.m_sExtra : "None"))
 	WRAPPER(FDropdown, int, VA_LIST(std::vector<const char*> vEntries, std::vector<int> vValues = {}, int iFlags = 0, int iSizeOffset = 0), VA_LIST(&val, vEntries, vValues, iFlags, iSizeOffset, var.m_sExtra ? var.m_sExtra : "None"))
+	WRAPPER(FSDropdown, int, VA_LIST(int iFlags = 0, int iSizeOffset = 0), VA_LIST(&val, var.m_vValues, iFlags, iSizeOffset))
 	WRAPPER(FSDropdown, std::string, VA_LIST(int iFlags = 0, int iSizeOffset = 0), VA_LIST(&val, var.m_vValues, iFlags, iSizeOffset))
 	WRAPPER(FMDropdown, VA_LIST(std::vector<std::pair<std::string, Color_t>>), VA_LIST(int iFlags = 0, int iSizeOffset = 0), VA_LIST(&val, iFlags, iSizeOffset))
 	WRAPPER(FColorPicker, Color_t, VA_LIST(int iFlags = 0, ImVec2 vOffset = {}, ImVec2 vSize = { H::Draw.Scale(12), H::Draw.Scale(12) }, ImVec2 vIconOffset = {}), VA_LIST(&val, iFlags, vOffset, vSize, vIconOffset))
