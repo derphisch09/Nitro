@@ -69,6 +69,11 @@ public:
 	virtual	bool EnableJoystickMode() = 0;
 	virtual bool IsSteamControllerActive() = 0;
 
+public:
+	CUserCmd* m_pCommands;
+	CVerifiedUserCmd* m_pVerifiedCommands;
+
+public:
 	CUserCmd* GetCommands()
 	{
 		return *reinterpret_cast<CUserCmd**>(uintptr_t(this) + 264);
