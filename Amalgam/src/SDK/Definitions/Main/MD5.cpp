@@ -198,3 +198,14 @@ void MD5Value_t::Zero()
 {
 	memset(bits, 0, sizeof(bits));
 }
+
+bool MD5Value_t::IsZero() const
+{
+	for (int i = 0; i < MD5_DIGEST_LENGTH; i++)
+	{
+		if (bits[i] != 0)
+			return false;
+	}
+
+	return true;
+}
