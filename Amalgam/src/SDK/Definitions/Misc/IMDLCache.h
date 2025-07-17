@@ -91,6 +91,8 @@ public:
 	virtual void MarkFrame() = 0;
 };
 
+MAKE_INTERFACE_VERSION(IMDLCache, MDLCache, "datacache.dll", "MDLCache004");
+
 class CMDLCacheCriticalSection
 {
 public:
