@@ -16,6 +16,12 @@ public:
 	bool AntiAimOn();
 	bool YawOn();
 	bool ShouldRun(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd);
+<<<<<<< Updated upstream
+=======
+
+	int GetEdge(CTFPlayer* pEntity, float flEdgeOrigYaw);
+	void LegJitter(CTFPlayer* pLocal, CUserCmd* pCmd);
+>>>>>>> Stashed changes
 	void Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd, bool bSendPacket);
 
 	inline int AntiAimTicks() { return 2; }
