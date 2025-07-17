@@ -41,6 +41,8 @@ public:
 	int m_nCommandsPredicted;
 	int m_nServerCommandsAcknowledged;
 	int m_bPreviousAckHadErrors;
+	int m_bPreviousAckErrorTriggersFullLatchReset;
+	CUtlVector< CHandle< CBaseEntity > > m_EntsWithPredictionErrorsInLastAck;
 	int m_nIncomingPacketNumber;
 	float m_flIdealPitch;
 };
