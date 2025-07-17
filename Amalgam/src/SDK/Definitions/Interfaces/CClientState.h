@@ -5,7 +5,10 @@
 #include "../Misc/ServerClass.h"
 #include "../Definitions.h"
 
-MAKE_SIGNATURE(CBaseClientState_SendStringCmd, "engine.dll", "48 81 EC ? ? ? ? 48 8B 49", 0x0);
+MAKE_SIGNATURE(CClientState_IsPaused, "engine.dll", "48 83 EC ? 80 B9 ? ? ? ? ? 75", 0x0);
+MAKE_SIGNATURE(CClientState_SendStringCmd, "engine.dll", "48 81 EC ? ? ? ? 48 8B 49", 0x0);
+MAKE_SIGNATURE(CClientState_ForceFullUpdate, "engine.dll", "40 53 48 83 EC ? 83 B9 ? ? ? ? ? 48 8B D9 74 ? E8", 0x0);
+//MAKE_SIGNATURE(CClientState_GetClientInterpAmount, "engine.dll", "E8 ? ? ? ? F3 0F 58 F8", 0x0);
 
 class IChangeFrameList;
 
@@ -89,10 +92,20 @@ public:
 	bool m_bMarkedCRCsUnverified;
 
 public:
-	void SendStringCmd(const char* command)
+	inline bool IsConnected() const
 	{
-		reinterpret_cast<void(*)(void*, const char*)>(S::CBaseClientState_SendStringCmd())(this, command);
+		return m_nSignonState >= SIGNONSTATE_CONNECTED;
 	}
+
+	inline bool IsActive() const
+	{
+		return m_nSignonState == SIGNONSTATE_FULL;
+	}
+
+	SIGNATURE(IsPaused, bool, CClientState, this);
+	SIGNATURE_ARGS(SendStringCmd, void, CClientState, (const char* command), this, command);
+	SIGNATURE(ForceFullUpdate, void, CClientState, this);
+	//SIGNATURE(GetClientInterpAmount, float, CClientState, this);
 };
 
 MAKE_INTERFACE_SIGNATURE(CClientState, ClientState, "engine.dll", "48 8D 0D ? ? ? ? E8 ? ? ? ? F3 0F 5E 05", 0x0, 0);
