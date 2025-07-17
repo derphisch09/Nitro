@@ -24,7 +24,12 @@ bool CTFWeaponBase::CanPrimaryAttack()
 
 bool CTFWeaponBase::CanSecondaryAttack()
 {
+<<<<<<< Updated upstream
 	auto pOwner = m_hOwnerEntity()->As<CTFPlayer>();
+=======
+	auto pOwner = m_hOwnerEntity().Get()->As<CTFPlayer>();
+
+>>>>>>> Stashed changes
 	if (!pOwner)
 		return false;
 
@@ -107,6 +112,18 @@ int CTFWeaponBase::GetAmmoPerShot(bool bAttribHookValue)
 	return 1;
 }
 
+bool CTFWeaponBase::CanOverload()
+{
+	return SDK::AttribHookValue(0.0f, "can_overload", this) != 0;
+}
+
+float CTFWeaponBase::EnergyGetMaxEnergy()
+{
+	const int iNumShots = static_cast<int>(20.f / EnergyGetShotCost());
+	SDK::AttribHookValue(iNumShots, "mult_clipsize_upgrade", this);
+	return iNumShots * EnergyGetShotCost();
+}
+
 bool CTFWeaponBase::IsRapidFire()
 {
 	if (auto pWeaponInfo = GetWeaponInfo())
@@ -127,7 +144,15 @@ float CTFWeaponBase::GetRange()
 	return 8192.f;
 }
 
+bool CTFWeaponBaseGun::HasKnockBack()
+{
+	return SDK::AttribHookValue(0, "set_scattergun_has_knockback", this);
+}	
 
+bool CTFRevolver::CanHeadshot()
+{
+	return SDK::AttribHookValue(0, "set_weapon_mode", this) == 1;
+}
 
 int CWeaponMedigun::GetMedigunType()
 {
@@ -215,21 +240,15 @@ float CTFSniperRifle::GetBodyshotMult(CTFPlayer* pTarget)
 	return flMult;
 }
 
-
-
 int CTFGrenadeLauncher::GetDetonateType()
 {
 	return SDK::AttribHookValue(0, "set_detonate_mode", this);
 }
 
-
-
 int CTFFlareGun::GetFlareGunType()
 {
 	return SDK::AttribHookValue(0, "set_weapon_mode", this);
 }
-
-
 
 #define ReturnTexture(string) { static CHudTexture* pTexture = H::Draw.GetIcon(string); return pTexture; }
 CHudTexture* CTFWeaponBase::GetWeaponIcon() // wow this is stupid
