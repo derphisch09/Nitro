@@ -23,6 +23,12 @@ Vec3 CBaseEntity::GetRenderCenter()
 	return GetRenderOrigin() + (vMaxs - vMins) / 2;
 }
 
+Vec3 CBaseEntity::GetOBBSize()
+{
+	Vec3 temp{ m_vecMaxs() - m_vecMins() };
+	return temp;
+}
+
 int CBaseEntity::IsInValidTeam()
 {
 	switch (int nTeamNum = m_iTeamNum())
@@ -46,4 +52,22 @@ int CBaseEntity::SolidMask()
 		return MASK_PLAYERSOLID;
 	}
 	return MASK_SOLID;
+}
+
+void* CBaseEntity::GetOriginalNetworkDataObject()
+{
+	if (m_pOriginalData())
+		return m_pOriginalData();
+
+	return nullptr;
+}
+
+size_t CBaseEntity::GetIntermediateDataSize()
+{
+	datamap_t* map = GetPredDescMap();
+
+	if (!map)
+		return sizeof(int32_t);
+
+	return std::max(4, map->packed_size);
 }
